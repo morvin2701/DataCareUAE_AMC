@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0B0F17" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#F7F6F2" media="(prefers-color-scheme: light)" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16" />
+    <title>DcAMC · DataCare</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+    <script>
+      // Apply saved theme + accent BEFORE React paints — no flash.
+      (function () {
+        try {
+          var root = document.documentElement;
+          var saved = localStorage.getItem('dcamc.theme');
+          var dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+          root.classList.toggle('dark', dark);
+          var acc = localStorage.getItem('dcamc.accent') || '#C9A227';
+          var h = acc.replace('#', ''); var r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+          root.style.setProperty('--accent', r + ' ' + g + ' ' + b);
+          var lum = (0.2126*r + 0.7152*g + 0.0722*b) / 255;
+          root.style.setProperty('--accent-ink', lum > 0.6 ? '20 18 12' : '255 255 255');
+          var sr = r, sg = g, sb = b; for (var i = 0; i < 8 && (0.2126 * sr + 0.7152 * sg + 0.0722 * sb) / 255 < 0.5; i++) { sr = Math.round(sr + (255 - sr) * 0.18); sg = Math.round(sg + (255 - sg) * 0.18); sb = Math.round(sb + (255 - sb) * 0.18); }
+          root.style.setProperty('--sb-accent-lift', sr + ' ' + sg + ' ' + sb);
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-bg text-ink antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

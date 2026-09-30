@@ -1,0 +1,15 @@
+{
+  "name": "dcamc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DataCare Softech FZCO — DcAMC: annual maintenance contracts, renewals, payments, support tickets and site visits for every jeweller on the DXB ERP",
+  "scripts": {
+    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start:backend": "npm --prefix backend run start",
+    "db:apply": "npm --prefix backend run db:apply"
+  },
+  "engines": { "node": ">=20" }
+}
