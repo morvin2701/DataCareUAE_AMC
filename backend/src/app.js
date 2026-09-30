@@ -27,7 +27,9 @@ export function createApp(extraRoutes = []) {
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
   app.use((req, _res, next) => { const x = req.headers['x-forwarded-for']; if (x) req.headers['x-forwarded-for'] = String(x).split(',').map((s) => s.trim().replace(/^(\d+\.\d+\.\d+\.\d+):\d+$/, '$1')).join(', '); next(); });
-  app.use(cors({ origin(origin, cb) { if (!origin || env.corsOrigins.includes(origin) || (!env.isProd && isPrivateOrigin(origin))) return cb(null, true); return cb(new Error(`Not allowed by CORS: ${origin}`)); } }));
+  /* an origin not in CORS_ORIGIN gets no CORS headers (the browser then blocks a cross-site call) — never a 500. Calls that come
+     through the Vercel proxy are same-origin for the browser, so they work whatever CORS_ORIGIN says. */
+  app.use(cors({ origin(origin, cb) { cb(null, !origin || env.corsOrigins.includes(origin) || (!env.isProd && isPrivateOrigin(origin))); } }));
   app.use(express.json({ limit: '5mb' }));
   app.get('/', (_req, res) => res.type('text').send('DataCare Softech FZCO — DcAMC backend'));
   for (const r of [...ROUTES, ...extraRoutes]) app.use('/api', r);
