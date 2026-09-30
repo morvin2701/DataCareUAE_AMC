@@ -12,6 +12,9 @@ import { UsersPage } from '../features/users/UsersPage.jsx';
 import { SettingsPage } from '../features/settings/SettingsPage.jsx';
 import { AuditPage } from '../features/settings/AuditPage.jsx';
 import { Placeholder } from '../features/Placeholder.jsx';
+import { CustomersPage } from '../features/customers/CustomersPage.jsx';
+import { CustomerPage } from '../features/customers/CustomerPage.jsx';
+import { ServersPage } from '../features/settings/ServersPanel.jsx';
 import { MENU, allowed } from './menu.js';
 
 function Splash() { return <div className="flex min-h-screen items-center justify-center bg-surface-2/40"><PageLoader title="Signing you in" hint="Restoring your session" /></div>; }
@@ -30,7 +33,7 @@ function RightGuard({ children }) {
   return children;
 }
 function Public({ children }) { const { status } = useAuth(); if (status === 'loading') return <Splash />; return status === 'authenticated' ? <Navigate to="/" replace /> : children; }
-const PAGES = { '/': DashboardPage, '/profile': ProfilePage, '/users': UsersPage, '/settings': SettingsPage, '/audit': AuditPage };
+const PAGES = { '/': DashboardPage, '/profile': ProfilePage, '/users': UsersPage, '/settings': SettingsPage, '/audit': AuditPage, '/customers': CustomersPage, '/servers': ServersPage };
 export function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
@@ -40,6 +43,7 @@ export function App() {
           <Route path="/change-password" element={<Private><ChangePasswordPage /></Private>} />
           <Route element={<Private><AppShell /></Private>}>
             <Route index element={<DashboardPage />} />
+            <Route path="customers/:id" element={<CustomerPage />} />
             {MENU.flatMap((g) => g.items).filter((i) => i.to !== '/').map((i) => { const P = PAGES[i.to] || Placeholder; return <Route key={i.to} path={i.to.slice(1)} element={<P />} />; })}
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

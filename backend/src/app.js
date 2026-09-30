@@ -6,11 +6,14 @@ import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
 import maintenanceRoutes from './routes/maintenance.js';
 import settingsRoutes from './routes/settings.js';
+import linkRoutes from './routes/link.js';
+import serversRoutes from './routes/servers.js';
+import customersRoutes from './routes/customers.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 const PRIVATE_HOST = /^(localhost|127\.0\.0\.1|\[::1\]|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/;
 const isPrivateOrigin = (origin) => { try { return PRIVATE_HOST.test(new URL(origin).hostname); } catch { return false; } };
-export const ROUTES = [healthRoutes, authRoutes, usersRoutes, maintenanceRoutes, settingsRoutes];
+export const ROUTES = [healthRoutes, linkRoutes, authRoutes, usersRoutes, maintenanceRoutes, settingsRoutes, serversRoutes, customersRoutes];
 
 export function createApp(extraRoutes = []) {
   const app = express();
