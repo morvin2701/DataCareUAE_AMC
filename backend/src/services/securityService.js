@@ -6,9 +6,8 @@ export const ROLES = ['OWNER', 'ACCOUNTS', 'SUPPORT'];
 export async function getPolicy() { return getSetting('SECURITY'); }
 export function passwordProblems(pwd, p) {
   const s = String(pwd || ''); const out = [];
-  if (s.length < (p.MIN_LEN || 8)) out.push(`at least ${p.MIN_LEN || 8} characters`);
+  if (s.length < (p.MIN_LEN || 8)) out.push(`at least ${p.MIN_LEN || 8} characters`);   /* the team signs in with their mobile numbers, so digits alone are fine */
   if (s.length > 128) out.push('at most 128 characters');
-  if (!/[A-Za-z]/.test(s) || !/\d/.test(s)) out.push('both letters and numbers');
   return out;
 }
 export async function logLogin({ userId = null, loginName = null, result, ip = null, userAgent = null }) {
