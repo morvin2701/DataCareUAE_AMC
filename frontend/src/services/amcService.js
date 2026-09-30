@@ -1,14 +1,18 @@
 import { api, qs } from './api.js';
 export const serverService = {
   list: () => api('/servers'), create: (b) => api('/servers', { method: 'POST', body: b }), update: (id, b) => api(`/servers/${id}`, { method: 'PUT', body: b }),
-  rotate: (id) => api(`/servers/${id}/rotate-key`, { method: 'POST' }), queue: (id) => api(`/servers/${id}/queue`), retry: (id) => api(`/servers/${id}/retry`, { method: 'POST' }), test: (id) => api(`/servers/${id}/test`, { method: 'POST' }),
+  rotate: (id) => api(`/servers/${id}/rotate-key`, { method: 'POST' }), test: (id) => api(`/servers/${id}/test`, { method: 'POST' }),
 };
 export const customerService = {
-  list: (p) => api(`/customers${qs(p)}`), get: (id) => api(`/customers/${id}`), update: (id, b) => api(`/customers/${id}`, { method: 'PUT', body: b }), history: (id) => api(`/customers/${id}/history`),
+  list: (p) => api(`/customers${qs(p)}`), get: (id) => api(`/customers/${id}`), meta: (p) => api(`/customers/meta${qs(p)}`), create: (b) => api('/customers', { method: 'POST', body: b }), update: (id, b) => api(`/customers/${id}`, { method: 'PUT', body: b }), remove: (id) => api(`/customers/${id}`, { method: 'DELETE' }), history: (id) => api(`/customers/${id}/history`),
 };
+export const leadService = {
+  list: (p) => api(`/leads${qs(p)}`), get: (id) => api(`/leads/${id}`), create: (b) => api('/leads', { method: 'POST', body: b }), update: (id, b) => api(`/leads/${id}`, { method: 'PUT', body: b }), followUp: (id, b) => api(`/leads/${id}/followup`, { method: 'POST', body: b }), convert: (id, b = {}) => api(`/leads/${id}/convert`, { method: 'POST', body: b }), remove: (id) => api(`/leads/${id}`, { method: 'DELETE' }),
+};
+export const notifyService = { list: (all) => api(`/notify${all ? '?all=1' : ''}`), read: (id) => api(`/notify/${id}/read`, { method: 'POST' }), readAll: () => api('/notify/read-all', { method: 'POST' }), create: (b) => api('/notify', { method: 'POST', body: b }), generate: () => api('/notify/generate', { method: 'POST' }) };
 export const contractService = {
   list: (p) => api(`/contracts${qs(p)}`), get: (id) => api(`/contracts/${id}`), defaults: (custId) => api(`/contracts/defaults/${custId}`),
-  create: (b) => api('/contracts', { method: 'POST', body: b }), update: (id, b) => api(`/contracts/${id}`, { method: 'PUT', body: b }), status: (id, status) => api(`/contracts/${id}/status`, { method: 'POST', body: { status } }), push: (id) => api(`/contracts/${id}/push`, { method: 'POST' }),
+  create: (b) => api('/contracts', { method: 'POST', body: b }), update: (id, b) => api(`/contracts/${id}`, { method: 'PUT', body: b }), status: (id, status) => api(`/contracts/${id}/status`, { method: 'POST', body: { status } }),
   print: (id) => api(`/contracts/${id}/print`),
 };
 export const invoiceService = {

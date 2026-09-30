@@ -29,7 +29,7 @@ export const requireRole = (...roles) => (req, _res, next) => {
 };
 export const requireOwner = requireRole('OWNER');
 /** SUPPORT never sees money: strip amounts from a row or list. */
-const MONEY = ['AMOUNT', 'VAT_AMT', 'TOTAL', 'PAID', 'BALANCE', 'OUTSTANDING', 'VAT_PRC'];
+const MONEY = ['AMOUNT', 'VAT_AMT', 'TOTAL', 'PAID', 'BALANCE', 'OUTSTANDING', 'VAT_PRC', 'INSTALL_AMT', 'BILLED', 'RECEIVED', 'EST_AMT'];
 export const noMoney = (ctx, rows) => {
   if (ctx.role !== 'SUPPORT') return rows;
   const strip = (r) => { const o = { ...r }; for (const k of MONEY) if (k in o) o[k] = null; return o; };

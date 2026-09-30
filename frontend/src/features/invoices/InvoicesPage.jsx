@@ -22,7 +22,7 @@ export function InvoicesPage() {
     <div className="mb-3 flex flex-wrap items-center gap-2"><SearchBox value={q} onChange={setQ} placeholder="Invoice, contract, shop…" className="w-full sm:w-72" /><Dropdown size="sm" className="w-36" value={status} onChange={(e) => setStatus(e.target.value)} options={[['', 'Any status'], ['OPEN', 'Open'], ['OVERDUE', 'Overdue'], ['PAID', 'Paid'], ['CANCELLED', 'Cancelled']]} /></div>
     <ErrorBox error={list.error} />
     <DataTable rows={rows} loading={list.loading} rowKey="INV_ID" onRowClick={(i) => nav(`/customers/${i.CUST_ID}?tab=payments`)} columns={[
-      { key: 'INV_NO', label: 'Invoice', render: (i) => <span className="font-mono text-[12.5px]">{i.INV_NO}</span> }, { key: 'SHOP_NAME', label: 'Shop', primary: true, render: (i) => <div><div className="font-medium">{i.SHOP_NAME}</div><div className="text-[11.5px] text-muted">{i.SHOP_CODE} · {i.CONTRACT_NO}</div></div> },
+      { key: 'INV_NO', label: 'Invoice', render: (i) => <span className="font-mono text-[12.5px]">{i.INV_NO}</span> }, { key: 'SHOP_NAME', label: 'Shop', primary: true, render: (i) => <div><div className="font-medium">{i.SHOP_NAME}</div><div className="text-[11.5px] text-muted">{i.SHOP_CODE} · {i.KIND === 'AMC' ? i.CONTRACT_NO : i.KIND}</div></div> },
       { key: 'INV_DATE', label: 'Date', render: (i) => <span className="num">{formatDate(i.INV_DATE)}</span> }, { key: 'DUE_DATE', label: 'Due', render: (i) => <span className={`num ${i.DAYS_OVERDUE > 0 ? 'text-bad' : ''}`}>{formatDate(i.DUE_DATE)}{i.DAYS_OVERDUE > 0 ? ` · ${i.DAYS_OVERDUE} d` : ''}</span> },
       { key: 'TOTAL', label: 'Total', align: 'right', render: (i) => formatAED(i.TOTAL) }, { key: 'PAID', label: 'Received', align: 'right', hideBelow: 'lg', render: (i) => formatAED(i.PAID) }, { key: 'BALANCE', label: 'Balance', align: 'right', render: (i) => <span className={Number(i.BALANCE) > 0 ? 'text-bad' : 'text-faint'}>{formatAED(i.BALANCE)}</span> },
       { key: 'STATUS', label: 'Status', render: (i) => <Badge tone={INV_TONE[i.STATUS]}>{i.STATUS}</Badge> },
@@ -36,7 +36,7 @@ export function PaymentsPage() {
   const nav = useNavigate(); const [q, setQ] = useState(''); const dq = useDebounce(q); const [f, setF] = useState({ from: '', to: '', mode: '' });
   const list = useQuery(() => paymentService.list({ q: dq, ...f }), [dq, f]); const rows = list.data?.rows || []; const live = rows.filter((p) => !p.CANCELLED);
   return <div className="w-full">
-    <PageHeader title="Payments" subtitle="Receipts against tax invoices — cash, bank, cheque or card. Cancel a receipt and the invoice balance goes back up." />
+    <PageHeader title="AMC received" subtitle="Receipts against tax invoices — cash, bank, cheque or card. Cancel a receipt and the invoice balance goes back up." />
     <div className="mb-3 flex flex-wrap items-end gap-2"><SearchBox value={q} onChange={setQ} placeholder="Receipt, invoice, shop, reference…" className="w-full sm:w-72" /><Input label="From" type="date" value={f.from} onChange={(e) => setF({ ...f, from: e.target.value })} className="w-40" nav={false} /><Input label="To" type="date" value={f.to} onChange={(e) => setF({ ...f, to: e.target.value })} className="w-40" nav={false} /><Dropdown size="md" className="w-40" value={f.mode} onChange={(e) => setF({ ...f, mode: e.target.value })} options={[['', 'Any mode'], ...MODES]} /></div>
     <ErrorBox error={list.error} />
     <DataTable rows={rows} loading={list.loading} rowKey="PAY_ID" onRowClick={(p) => nav(`/customers/${p.CUST_ID}?tab=payments`)} columns={[

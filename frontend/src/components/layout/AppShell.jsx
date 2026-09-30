@@ -12,6 +12,7 @@ import { useIdleLogout } from '../../hooks/useIdleLogout.js';
 import { useHotkeys } from '../../hooks/useHotkeys.js';
 import { MENU, findMenu, allowed } from '../../app/menu.js';
 import { kb } from '../../lib/platform.js';
+import { NotifyBell } from '../../features/notify/NotificationsPage.jsx';
 
 export function AppShell() {
   const { session, logout } = useAuth(); const { role } = useRights();
@@ -36,7 +37,7 @@ export function AppShell() {
           <div className="flex h-12 items-center gap-2 px-4 sm:px-6">
             <button className="btn-ghost !h-8 !w-8 !px-0 lg:hidden" onClick={() => setOpen(true)} aria-label="Menu"><Menu className="h-4 w-4" /></button>
             <nav className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted" aria-label="Breadcrumb">{here ? <><span className="hidden sm:inline">{here.group.label}</span><ChevronRight className="hidden h-3.5 w-3.5 sm:inline" /><span className="truncate font-medium text-ink">{here.item.label}</span></> : <span className="font-medium text-ink">Home</span>}</nav>
-            <div className="ml-auto hidden items-center gap-1.5 text-[11.5px] text-faint md:flex" title="Keyboard shortcuts"><kbd className="kbd">{kb('K')}</kbd> search <kbd className="kbd ml-2">Alt C</kbd> customers <kbd className="kbd ml-2">Alt T</kbd> tickets <kbd className="kbd ml-2">Alt V</kbd> visits</div>
+            <div className="ml-auto flex items-center gap-2"><div className="hidden items-center gap-1.5 text-[11.5px] text-faint lg:flex" title="Keyboard shortcuts"><kbd className="kbd">{kb('K')}</kbd> search <kbd className="kbd ml-2">Alt C</kbd> parties <kbd className="kbd ml-2">Alt T</kbd> tickets <kbd className="kbd ml-2">Alt V</kbd> visits</div><NotifyBell /></div>
           </div>
         </header>
         <main className="flex-1 px-4 py-5 sm:px-6"><Outlet /></main>

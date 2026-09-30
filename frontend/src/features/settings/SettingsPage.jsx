@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Building2, Hash, ShieldCheck, Timer, Mail, MessageCircle, Server, DatabaseZap, BellRing } from 'lucide-react';
+import { Building2, Hash, ShieldCheck, Timer, Mail, MessageCircle, Server, DatabaseZap, Tags } from 'lucide-react';
 import { settingsService } from '../../services/authService.js';
 import { useQuery } from '../../hooks/useQuery.js';
 import { Input, Select } from '../../components/ui/Field.jsx';
@@ -11,7 +11,7 @@ import { useEnterNavigation } from '../../hooks/useEnterNavigation.js';
 import { ServersPanel } from './ServersPanel.jsx';
 import { formatDateTime } from '../../lib/fmt.js';
 
-const TABS = [['company', 'Company', Building2], ['numbering', 'Numbering & VAT', Hash], ['security', 'Security', ShieldCheck], ['sla', 'SLA & reminders', Timer], ['smtp', 'E-mail (SMTP)', Mail], ['whatsapp', 'WhatsApp', MessageCircle], ['servers', 'Servers & link keys', Server], ['field', 'Field update', DatabaseZap]];
+const TABS = [['company', 'Company', Building2], ['numbering', 'Numbering & VAT', Hash], ['prices', 'Software prices', Tags], ['security', 'Security', ShieldCheck], ['sla', 'SLA & reminders', Timer], ['smtp', 'E-mail (SMTP)', Mail], ['whatsapp', 'WhatsApp', MessageCircle], ['servers', 'Servers & link keys', Server], ['field', 'Field update', DatabaseZap]];
 /** One settings form: loads the key, edits a copy, saves the key (+ an optional secret). */
 function SettingForm({ settingKey, initial, children, secretLabel, secretHint, hasSecret, onSaved, extra = {} }) {
   const toast = useToast(); const [v, setV] = useState(initial); const [secret, setSecret] = useState(''); const [busy, setBusy] = useState(false); const [dirty, setDirty] = useState(false);
@@ -44,6 +44,7 @@ export function SettingsPage() {
           <SettingForm settingKey="NUMBERING" initial={s.NUMBERING}>{({ bind }) => <FormSection title="Number prefixes — the running number is 5 digits and never reused"><Input label="Contract" {...bind('CONTRACT')} upper={false} /><Input label="Tax invoice" {...bind('INVOICE')} upper={false} /><Input label="Receipt" {...bind('RECEIPT')} upper={false} /><Input label="Ticket" {...bind('TICKET')} upper={false} /></FormSection>}</SettingForm>
           <SettingForm settingKey="VAT_PRC" initial={{ value: s.VAT_PRC }} extra={{}}>{({ bind }) => <VatField bind={bind} />}</SettingForm>
         </div>}
+        {tab === 'prices' && s.PRICES && <SettingForm settingKey="PRICES" initial={s.PRICES}>{({ bind }) => <FormSection title="Price of each software type (AED, before VAT) — the convert amount when a shop moves up is the difference"><Input label="Basic" type="number" min="0" step="0.01" {...bind('BASIC')} /><Input label="Pro" type="number" min="0" step="0.01" {...bind('PRO')} /><Input label="Advance" type="number" min="0" step="0.01" {...bind('ADVANCE')} /><Input label="Enterprise" type="number" min="0" step="0.01" {...bind('ENTERPRISE')} /></FormSection>}</SettingForm>}
         {tab === 'security' && s.SECURITY && <div className="space-y-4">
           <SettingForm settingKey="SECURITY" initial={s.SECURITY}>{({ bind }) => <FormSection title="Sign-in"><Input label="Lock after wrong passwords" type="number" min="0" {...bind('LOCK_ATTEMPTS')} hint="0 = never lock" /><Input label="Locked for (minutes)" type="number" min="1" {...bind('LOCK_MINUTES')} /><Input label="Minimum password length" type="number" min="6" {...bind('MIN_LEN')} /></FormSection>}</SettingForm>
           <SettingForm settingKey="IDLE_MINUTES" initial={{ value: s.IDLE_MINUTES }}>{({ bind }) => <FormSection title="Idle sign-out"><Input label="Sign out after (minutes of no activity)" type="number" min="0" max="1440" {...bind('value')} hint="0 = never. Takes effect at the next sign-in." /></FormSection>}</SettingForm>

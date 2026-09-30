@@ -9,11 +9,11 @@ import { getSetting, setSetting, hasSecret, DEFAULTS } from '../services/setting
  * Secrets (SMTP password, WhatsApp licence) go to *_SECRET keys and are only ever reported as set / not set.
  */
 const r = Router();
-const PUBLIC = ['COMPANY', 'NUMBERING', 'VAT_PRC', 'IDLE_MINUTES', 'SECURITY', 'SLA_HOURS', 'SMTP', 'WHATSAPP', 'REMINDERS', 'BACKUP'];
+const PUBLIC = ['COMPANY', 'NUMBERING', 'VAT_PRC', 'PRICES', 'IDLE_MINUTES', 'SECURITY', 'SLA_HOURS', 'SMTP', 'WHATSAPP', 'REMINDERS', 'BACKUP'];
 const SECRETS = { SMTP: 'SMTP_SECRET', WHATSAPP: 'WHATSAPP_SECRET' };
 r.get('/settings', requireAuth, wrap(async (req, res) => {
   const out = {}; for (const k of PUBLIC) out[k] = await getSetting(k);
-  if (req.ctx.role !== 'OWNER') { const { COMPANY, NUMBERING, VAT_PRC, SLA_HOURS } = out; return res.json({ success: true, settings: { COMPANY, NUMBERING, VAT_PRC, SLA_HOURS } }); }
+  if (req.ctx.role !== 'OWNER') { const { COMPANY, NUMBERING, VAT_PRC, SLA_HOURS, PRICES } = out; return res.json({ success: true, settings: { COMPANY, NUMBERING, VAT_PRC, SLA_HOURS, PRICES: req.ctx.role === 'SUPPORT' ? undefined : PRICES } }); }
   out.SMTP = { ...out.SMTP, hasPassword: await hasSecret('SMTP_SECRET') }; out.WHATSAPP = { ...out.WHATSAPP, hasLicence: await hasSecret('WHATSAPP_SECRET') };
   res.json({ success: true, settings: out });
 }));

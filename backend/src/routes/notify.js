@@ -1,0 +1,11 @@
+import { Router } from 'express';
+import { requireAuth, requireOwner } from '../middleware/auth.js';
+import { wrap } from '../utils/httpError.js';
+import { listMine, markRead, markAllRead, createCustom, generate } from '../services/notifyService.js';
+const r = Router();
+r.get('/notify', requireAuth, wrap(async (req, res) => res.json({ success: true, ...(await listMine(req.ctx.userId, { all: req.query.all === '1' })) })));
+r.post('/notify/read-all', requireAuth, wrap(async (req, res) => { await markAllRead(req.ctx.userId); res.json({ success: true }); }));
+r.post('/notify/:id/read', requireAuth, wrap(async (req, res) => { await markRead(req.ctx.userId, Number(req.params.id)); res.json({ success: true }); }));
+r.post('/notify', requireAuth, requireOwner, wrap(async (req, res) => { await createCustom(req.ctx, req.body || {}); res.status(201).json({ success: true }); }));
+r.post('/notify/generate', requireAuth, requireOwner, wrap(async (_req, res) => { await generate(); res.json({ success: true }); }));
+export default r;

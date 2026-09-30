@@ -4,7 +4,6 @@ import { today, addDays, renewalStart, yearEnd, iso, LICENCE_DAYS } from '../uti
 import { getSetting } from './settingsService.js';
 import { withNo } from './numbering.js';
 import { audit } from './audit.js';
-import { pushLicence } from './linkService.js';
 
 /**
  * Contracts (AMC_CONTRACT). A year is exactly 365 days from its start. A renewal starts on the current expiry while it is
@@ -18,7 +17,7 @@ export const CONTRACT_COLS = `K.CONTRACT_ID, K.CUST_ID, C.SHOP_CODE, C.SHOP_NAME
   (SELECT TOP 1 I.INV_NO FROM AMC_INVOICE I WHERE I.CONTRACT_ID = K.CONTRACT_ID AND I.STATUS <> 'CANCELLED') AS INV_NO, (SELECT TOP 1 I.INV_ID FROM AMC_INVOICE I WHERE I.CONTRACT_ID = K.CONTRACT_ID AND I.STATUS <> 'CANCELLED') AS INV_ID,
   (SELECT ISNULL(SUM(I.TOTAL - I.PAID), 0) FROM AMC_INVOICE I WHERE I.CONTRACT_ID = K.CONTRACT_ID AND I.STATUS <> 'CANCELLED') AS BALANCE,
   (SELECT COUNT(*) FROM AMC_VISIT V WHERE V.CUST_ID = K.CUST_ID AND V.STATUS = 'DONE' AND V.VISIT_DATE BETWEEN K.START_DATE AND K.END_DATE) AS VISITS_USED`;
-export const CONTRACT_FROM = 'FROM AMC_CONTRACT K JOIN AMC_CUSTOMER C ON C.CUST_ID = K.CUST_ID JOIN AMC_SERVER S ON S.SERVER_ID = C.SERVER_ID LEFT JOIN AMC_USER U ON U.USER_ID = K.USER_ID';
+export const CONTRACT_FROM = 'FROM AMC_CONTRACT K JOIN AMC_CUSTOMER C ON C.CUST_ID = K.CUST_ID LEFT JOIN AMC_SERVER S ON S.SERVER_ID = C.SERVER_ID LEFT JOIN AMC_USER U ON U.USER_ID = K.USER_ID';
 const shape = (k) => ({ ...k, COVERS_SUPPORT: !!k.COVERS_SUPPORT, COVERS_UPDATES: !!k.COVERS_UPDATES, START_DATE: iso(k.START_DATE), END_DATE: iso(k.END_DATE) });
 /** LIVE contracts past their end read EXPIRED — kept true on every read. */
 export const expireContracts = async () => (await rq()).query("UPDATE AMC_CONTRACT SET STATUS = 'EXPIRED', EDIT_DATE = SYSUTCDATETIME() WHERE STATUS = 'LIVE' AND END_DATE < CAST(SYSUTCDATETIME() AS DATE)");
@@ -77,7 +76,7 @@ export async function updateContract(ctx, id, b) {
   await audit(ctx, 'AMC_CONTRACT', k.CONTRACT_NO, 'UPDATE', { start: d.start, end: d.end, amount: d.amount });
   return { contract: await getContract(id) };
 }
-/** DRAFT → LIVE raises the invoice and pushes the licence; LIVE/DRAFT → CANCELLED. */
+/** DRAFT → LIVE raises the invoice; LIVE/DRAFT → CANCELLED. */
 export async function setStatus(ctx, id, status) {
   const k = await getContract(id); if (!k) throw notFound('Contract not found');
   const want = String(status || '').toUpperCase();
@@ -90,7 +89,6 @@ export async function setStatus(ctx, id, status) {
     await (await rq()).input('id', sql.Int, id).query("UPDATE AMC_CONTRACT SET STATUS = 'LIVE', EDIT_DATE = SYSUTCDATETIME() WHERE CONTRACT_ID = @id");
     await audit(ctx, 'AMC_CONTRACT', k.CONTRACT_NO, 'LIVE');
     const { ensureInvoice } = await import('./invoiceService.js'); await ensureInvoice(ctx, id);
-    await pushContract(ctx, id);
     return { contract: await getContract(id) };
   }
   if (want === 'CANCELLED') {
@@ -101,13 +99,6 @@ export async function setStatus(ctx, id, status) {
     return { contract: await getContract(id) };
   }
   throw badRequest('Status is LIVE or CANCELLED.');
-}
-/** Push (or re-push) the licence this contract stands for. */
-export async function pushContract(ctx, id) {
-  const k = await getContract(id); if (!k) throw notFound('Contract not found');
-  if (k.STATUS !== 'LIVE') throw badRequest('Only a live contract is pushed to the shop.');
-  const payload = { shopCode: k.SHOP_CODE, endDate: k.END_DATE, ...(k.TILLS != null ? { tills: k.TILLS } : {}), ...(k.PLAN_CODE ? { plan: k.PLAN_CODE } : {}), status: 'ACTIVE' };
-  return pushLicence(ctx, { serverId: k.SERVER_ID, custId: k.CUST_ID, contractId: id, payload });
 }
 /** Contract print: the contract, the shop and DataCare's own details. */
 export async function contractPrint(id) {

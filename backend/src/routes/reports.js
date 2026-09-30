@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { requireAuth, requireRole, noMoney } from '../middleware/auth.js';
 import { wrap, badRequest } from '../utils/httpError.js';
 import { rq, sql } from '../config/db.js';
-import { CUST_COLS, CUST_FROM } from './customers.js';
+import { CUST_COLS, CUST_FROM } from '../services/partyService.js';
 import { expireContracts } from '../services/contractService.js';
 /** Reports. Money reports need ACCOUNTS; the rest are for everyone (SUPPORT sees no amounts). */
 const r = Router(); const money = requireRole('ACCOUNTS');

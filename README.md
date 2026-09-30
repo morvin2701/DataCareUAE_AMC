@@ -2,12 +2,13 @@
 
 Annual maintenance contracts, renewals, tax invoices and payments, support tickets, site visits and reminders for every
 jeweller running the DataCare DXB ERP. A standalone app: its own repo, its own database (`DcAmc`), its own logins.
-It talks to each customer's ERP only through a small HTTP link (heartbeat in, licence push out).
+Customers are added in Party master; an ERP server's heartbeat can also bring its shops in. The link is one way: DcAMC reads
+what the ERP sends and never sends anything back.
 
 ```
 browser ── Vercel (React screens) ──/api──▶ DcAMC API (Node, Windows service on DataCare's server) ──▶ SQL Server DcAmc
-                                                   ▲ heartbeat (every 24 h)              │ licence push (signed)
-                                            customer ERP servers ◀───────────────────────┘
+                                                   ▲ heartbeat (every 24 h), one way
+                                            customer ERP servers
 ```
 
 ## Layout
@@ -57,17 +58,19 @@ Sign in with `OWNER_LOGIN` / `OWNER_PASSWORD`. Generate the two keys with `opens
    AMC_URL=https://amc-api.datacarewebuae.com
    AMC_KEY=SRV0001.xxxxxxxx
    ```
-3. The ERP posts a heartbeat on start, every 24 h and after any licence change; the shops appear under **Customers**.
-   A server silent for 48 h shows as offline. Renewing a contract in DcAMC pushes `{ shopCode, endDate, tills?, plan?, status }`
-   to `POST /api/link/licence` on that ERP, signed with the key; an unreachable server queues the push and the next heartbeat
-   delivers it (Settings → Servers → queue).
-4. `Test` on the server row pings the ERP with the key. `backend/scripts/sampleHeartbeat.js <AMC_URL> <AMC_KEY>` posts a sample;
-   `backend/scripts/mockErp.js <port> <AMC_KEY>` stands in for a customer's ERP while developing.
+3. The ERP posts a heartbeat on start, every 24 h and after any licence change; its shops appear in **Party master** (a party
+   typed here first with the same HDD or Shop ID is attached instead of duplicated). A server silent for 48 h shows as offline.
+   Nothing is ever sent back to the ERP.
+4. `Test` on the server row pings the ERP with the key. `backend/scripts/sampleHeartbeat.js <AMC_URL> <AMC_KEY>` posts a sample.
 
 ## Business rules
 * A contract year is exactly 365 days from its start (as the ERP licences). A renewal starts on the current expiry while it is
   live, else today; amount and cover default from the last contract. Currency AED, VAT 5 % (Settings), dates dd/mm/yyyy, Asia/Dubai.
-* Making a contract **live** raises its one tax invoice (INV-…) and pushes the licence. Cancel puts the invoice back if unpaid.
+* A party's installation date is its AMC start; the end is +365 days. The installation amount is billed once on save.
+* Moving a party up a software type bills the **convert amount** — the price difference in Settings → Software prices.
+* Making a contract **live** raises its one tax invoice (INV-…). Cancel puts the invoice back if unpaid.
+* Leads carry a next follow-up / demo time; notifications tell the owner when it comes, and tickets past SLA and licences / AMCs
+  ending within 7 days notify the team.
 * Receipts (cash / bank / cheque / card) never exceed the invoice balance; cancelling one restores the balance.
 * Tickets get an SLA deadline from Settings → SLA hours by priority; notes carry minutes; close with a resolution.
 * Reminders: each rule fires once per customer and reference, so a missed day still goes out the next day. WhatsApp goes

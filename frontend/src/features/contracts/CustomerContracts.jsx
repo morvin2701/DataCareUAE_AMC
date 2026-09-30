@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Printer, Send, Ban, Play } from 'lucide-react';
+import { Plus, Printer, Ban, Play } from 'lucide-react';
 import { contractService } from '../../services/amcService.js';
 import { useQuery } from '../../hooks/useQuery.js';
 import { useRights } from '../../app/AuthContext.jsx';
@@ -9,7 +9,7 @@ import { Button } from '../../components/ui/Button.jsx';
 import { Badge, ConfirmDialog } from '../../components/ui/Controls.jsx';
 import { useToast } from '../../components/ui/Toast.jsx';
 import { ContractEditor } from './ContractEditor.jsx';
-import { STATUS_TONE, PushBadge } from './contractUi.jsx';
+import { STATUS_TONE } from './contractUi.jsx';
 import { Expiry } from '../customers/CustomersPage.jsx';
 import { formatDate, formatAED } from '../../lib/fmt.js';
 
@@ -30,10 +30,9 @@ export function CustomerContracts({ customer, onChange, openNew }) {
       { key: 'STATUS', label: 'Status', render: (k) => <Badge tone={STATUS_TONE[k.STATUS]}>{k.STATUS}</Badge> },
       { key: 'COVER', label: 'Cover', hideBelow: 'lg', render: (k) => [k.COVERS_SUPPORT && 'Support', k.COVERS_UPDATES && 'Updates', k.VISITS_INCLUDED ? `${k.VISITS_USED}/${k.VISITS_INCLUDED} visits` : null].filter(Boolean).join(' · ') || '—' },
       ...(money ? [{ key: 'TOTAL', label: 'Total', align: 'right', render: (k) => formatAED(k.TOTAL) }, { key: 'BALANCE', label: 'Balance', align: 'right', render: (k) => Number(k.BALANCE) > 0 ? <span className="text-bad">{formatAED(k.BALANCE)}</span> : <span className="text-faint">—</span> }] : []),
-      { key: 'PUSH_STATUS', label: 'Licence', render: (k) => <span title={k.PUSH_MSG || ''}><PushBadge k={k} /></span> },
-      { key: 'ACTIONS', label: '', render: (k) => <span className="flex justify-end gap-1"><button className="btn-ghost !h-7 !px-2 !text-[12px]" title="Print the contract" onClick={() => nav(`/contracts/${k.CONTRACT_ID}/print`)}><Printer className="h-3.5 w-3.5" /></button>{money && k.STATUS !== 'CANCELLED' && <button className="btn-ghost !h-7 !px-2 !text-[12px]" onClick={() => setEdit(k)}>Edit</button>}{money && k.STATUS === 'DRAFT' && <button className="btn-soft !h-7 !px-2 !text-[12px]" title="Raise the invoice and push the licence" onClick={() => act(() => contractService.status(k.CONTRACT_ID, 'LIVE'), (r) => `${k.CONTRACT_NO} live — push ${r.contract.PUSH_STATUS}`)}><Play className="h-3.5 w-3.5" /></button>}{money && k.STATUS === 'LIVE' && <button className="btn-ghost !h-7 !px-2 !text-[12px]" title="Push the licence again" onClick={() => act(() => contractService.push(k.CONTRACT_ID), (r) => r.push.message)}><Send className="h-3.5 w-3.5" /></button>}{money && ['DRAFT', 'LIVE'].includes(k.STATUS) && <button className="btn-ghost !h-7 !px-2 !text-[12px] !text-bad" title="Cancel" onClick={() => setAsk(k)}><Ban className="h-3.5 w-3.5" /></button>}</span> },
+      { key: 'ACTIONS', label: '', render: (k) => <span className="flex justify-end gap-1"><button className="btn-ghost !h-7 !px-2 !text-[12px]" title="Print the contract" onClick={() => nav(`/contracts/${k.CONTRACT_ID}/print`)}><Printer className="h-3.5 w-3.5" /></button>{money && k.STATUS !== 'CANCELLED' && <button className="btn-ghost !h-7 !px-2 !text-[12px]" onClick={() => setEdit(k)}>Edit</button>}{money && k.STATUS === 'DRAFT' && <button className="btn-soft !h-7 !px-2 !text-[12px]" title="Make live and raise the invoice" onClick={() => act(() => contractService.status(k.CONTRACT_ID, 'LIVE'), (r) => `${k.CONTRACT_NO} live — invoice ${r.contract.INV_NO || ''}`)}><Play className="h-3.5 w-3.5" /></button>}{money && ['DRAFT', 'LIVE'].includes(k.STATUS) && <button className="btn-ghost !h-7 !px-2 !text-[12px] !text-bad" title="Cancel" onClick={() => setAsk(k)}><Ban className="h-3.5 w-3.5" /></button>}</span> },
     ]} emptyTitle="No contract yet" emptyHint={money ? 'Make the first AMC: start defaults to the licence end, one year, and the amount you type.' : 'No AMC on record.'} />
     <ContractEditor open={!!edit} onClose={() => setEdit(null)} custId={customer.CUST_ID} contract={edit?.new ? null : edit} onSaved={done} />
-    <ConfirmDialog open={!!ask} onClose={() => setAsk(null)} busy={busy} onConfirm={() => act(() => contractService.status(ask.CONTRACT_ID, 'CANCELLED'), `${ask.CONTRACT_NO} cancelled`)} title={`Cancel ${ask?.CONTRACT_NO}?`} message="The contract and its unpaid invoice are marked cancelled. The shop's licence is not touched." confirmLabel="Cancel contract" />
+    <ConfirmDialog open={!!ask} onClose={() => setAsk(null)} busy={busy} onConfirm={() => act(() => contractService.status(ask.CONTRACT_ID, 'CANCELLED'), `${ask.CONTRACT_NO} cancelled`)} title={`Cancel ${ask?.CONTRACT_NO}?`} message="The contract and its unpaid invoice are marked cancelled." confirmLabel="Cancel contract" />
   </div>;
 }

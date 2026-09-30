@@ -55,6 +55,6 @@ export function CustomersPage() {
       { key: 'OPEN_TICKETS', label: 'Tickets', align: 'center', render: (c) => c.OPEN_TICKETS ? <Badge tone="warn">{c.OPEN_TICKETS}</Badge> : <span className="text-faint">0</span> },
       { key: 'CONTACT_NAME', label: 'Contact', hideBelow: 'xl', render: (c) => <div><div>{c.CONTACT_NAME || '—'}</div><div className="num text-[11.5px] text-muted">{displayMobile(c.MOBILE_NO)}</div></div> },
       { key: 'LAST_LOGIN', label: 'Last used', hideBelow: 'xl', render: (c) => <span className="text-muted">{rel(c.LAST_LOGIN)}</span> },
-    ]} emptyTitle="No customers yet" emptyHint="Add a customer's server under Settings → Servers, put its key in that ERP's .env, and the shops appear with the first heartbeat." footer={<span>{rows.length} shops · <kbd className="kbd">/</kbd> search · click a row to open</span>} />
+    ]} emptyTitle="No customers yet" emptyHint="Add parties in Party master." footer={<span>{rows.length} shops · <kbd className="kbd">/</kbd> search · click a row to open</span>} />
   </div>;
 }

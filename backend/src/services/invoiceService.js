@@ -6,7 +6,7 @@ import { withNo } from './numbering.js';
 import { audit } from './audit.js';
 
 /** Tax invoices (one per contract) and receipts. PAID on the invoice always equals the sum of its live payments. */
-export const INV_COLS = `I.INV_ID, I.INV_NO, I.CONTRACT_ID, K.CONTRACT_NO, I.CUST_ID, C.SHOP_CODE, C.SHOP_NAME, I.INV_DATE, I.DUE_DATE, I.DESCRIPTION, I.AMOUNT, I.VAT_PRC, I.VAT_AMT, I.TOTAL, I.PAID, I.TOTAL - I.PAID AS BALANCE, I.STATUS, I.REMARK, I.ENTRY_DATE,
+export const INV_COLS = `I.INV_ID, I.INV_NO, I.KIND, I.CONTRACT_ID, K.CONTRACT_NO, I.CUST_ID, C.SHOP_CODE, C.SHOP_NAME, I.INV_DATE, I.DUE_DATE, I.DESCRIPTION, I.AMOUNT, I.VAT_PRC, I.VAT_AMT, I.TOTAL, I.PAID, I.TOTAL - I.PAID AS BALANCE, I.STATUS, I.REMARK, I.ENTRY_DATE,
   CASE WHEN I.STATUS = 'OPEN' AND I.DUE_DATE < CAST(SYSUTCDATETIME() AS DATE) THEN DATEDIFF(day, I.DUE_DATE, CAST(SYSUTCDATETIME() AS DATE)) ELSE 0 END AS DAYS_OVERDUE`;
 export const INV_FROM = 'FROM AMC_INVOICE I JOIN AMC_CUSTOMER C ON C.CUST_ID = I.CUST_ID LEFT JOIN AMC_CONTRACT K ON K.CONTRACT_ID = I.CONTRACT_ID';
 const shape = (i) => ({ ...i, INV_DATE: iso(i.INV_DATE), DUE_DATE: iso(i.DUE_DATE) });
@@ -30,6 +30,15 @@ export async function ensureInvoice(ctx, contractId, { invDate = null, dueDays =
     .input('a', sql.Decimal(18, 2), k.AMOUNT).input('vp', sql.Decimal(5, 2), k.VAT_PRC).input('va', sql.Decimal(18, 2), k.VAT_AMT).input('t', sql.Decimal(18, 2), k.TOTAL).input('u', sql.Int, ctx.userId)
     .query('INSERT INTO AMC_INVOICE (INV_NO, CONTRACT_ID, CUST_ID, INV_DATE, DUE_DATE, DESCRIPTION, AMOUNT, VAT_PRC, VAT_AMT, TOTAL, USER_ID) OUTPUT inserted.INV_ID VALUES (@no, @k, @c, @d, @due, @ds, @a, @vp, @va, @t, @u)')).recordset[0].INV_ID);
   const inv = await getInvoice(id); await audit(ctx, 'AMC_INVOICE', inv.INV_NO, 'CREATE', { contract: k.CONTRACT_NO, total: inv.TOTAL }); return inv;
+}
+/** A bill that is not a contract's: the installation amount, or the difference when the software type moves up. */
+export async function raiseInvoice(ctx, { custId, kind, amount, invDate = null, dueDays = 30, description }) {
+  const c = (await (await rq()).input('id', sql.Int, custId).query('SELECT SHOP_NAME FROM AMC_CUSTOMER WHERE CUST_ID = @id')).recordset[0]; if (!c) throw notFound('Party not found');
+  const vatPrc = Number(await getSetting('VAT_PRC')); const amt = Math.round((Number(amount) || 0) * 100) / 100; const vat = Math.round(amt * vatPrc) / 100; const d = invDate || today();
+  const id = await withNo('INVOICE', async (no) => (await (await rq()).input('no', sql.VarChar(20), no).input('k', sql.VarChar(10), kind).input('c', sql.Int, custId).input('d', sql.Date, d).input('due', sql.Date, addDays(d, dueDays)).input('ds', sql.NVarChar(500), String(description || kind).slice(0, 500))
+    .input('a', sql.Decimal(18, 2), amt).input('vp', sql.Decimal(5, 2), vatPrc).input('va', sql.Decimal(18, 2), vat).input('t', sql.Decimal(18, 2), Math.round((amt + vat) * 100) / 100).input('u', sql.Int, ctx.userId)
+    .query('INSERT INTO AMC_INVOICE (INV_NO, KIND, CONTRACT_ID, CUST_ID, INV_DATE, DUE_DATE, DESCRIPTION, AMOUNT, VAT_PRC, VAT_AMT, TOTAL, USER_ID) OUTPUT inserted.INV_ID VALUES (@no, @k, NULL, @c, @d, @due, @ds, @a, @vp, @va, @t, @u)')).recordset[0].INV_ID);
+  const inv = await getInvoice(id); await audit(ctx, 'AMC_INVOICE', inv.INV_NO, 'CREATE', { kind, shop: c.SHOP_NAME, total: inv.TOTAL }); return inv;
 }
 export async function cancelInvoice(ctx, id) {
   const i = await getInvoice(id); if (!i) throw notFound('Invoice not found');
