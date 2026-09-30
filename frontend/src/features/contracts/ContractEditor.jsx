@@ -6,13 +6,12 @@ import { Input, Select, Textarea } from '../../components/ui/Field.jsx';
 import { Toggle, Badge } from '../../components/ui/Controls.jsx';
 import { useToast } from '../../components/ui/Toast.jsx';
 import { useEnterNavigation } from '../../hooks/useEnterNavigation.js';
-import { formatDate, addDays, fmt, today } from '../../lib/fmt.js';
+import { formatDate, fmt, yearEnd } from '../../lib/fmt.js';
 
-const LICENCE_DAYS = 365;
 const money = (v) => Math.round((Number(v) || 0) * 100) / 100;
 const PLANS = [['', '— as the licence says —'], ['BASIC', 'Basic'], ['PRO', 'Pro'], ['ADVANCE', 'Advance'], ['ENTERPRISE', 'Enterprise']];
 /**
- * New / renew / edit a contract. Defaults come from the server: start = the current expiry (or today), end = +365
+ * New / renew / edit a contract. Defaults come from the server: start = licence start, or the day after the last AMC, end = +365
  * days, amount and cover from the last contract. Save keeps a draft; "Make live" raises the invoice and pushes the licence.
  */
 export function ContractEditor({ open, onClose, custId, contract, onSaved }) {
@@ -24,7 +23,7 @@ export function ContractEditor({ open, onClose, custId, contract, onSaved }) {
   }, [open, custId, contract]); // eslint-disable-line
   const load = async (id) => { try { const r = await contractService.defaults(id); setD(r); setF({ CUST_ID: id, START_DATE: r.START_DATE, END_DATE: r.END_DATE, AMOUNT: r.AMOUNT, VAT_PRC: r.VAT_PRC, COVERS_SUPPORT: r.COVERS_SUPPORT, COVERS_UPDATES: r.COVERS_UPDATES, VISITS_INCLUDED: r.VISITS_INCLUDED, TILLS: r.TILLS ?? '', PLAN_CODE: r.PLAN_CODE || '', RENEWED_FROM: r.RENEWED_FROM, REMARK: '' }); } catch (e) { toast(e.message, 'error'); } };
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
-  const setStart = (v) => setF((s) => ({ ...s, START_DATE: v, END_DATE: v ? addDays(v, LICENCE_DAYS) : s.END_DATE }));
+  const setStart = (v) => setF((s) => ({ ...s, START_DATE: v, END_DATE: v ? yearEnd(v) : s.END_DATE }));
   const vatAmt = f ? money(f.AMOUNT * f.VAT_PRC / 100) : 0; const total = f ? money(Number(f.AMOUNT) + vatAmt) : 0;
   const save = async (live) => {
     if (!f) return; setBusy(live ? 'live' : 'save');
@@ -42,7 +41,7 @@ export function ContractEditor({ open, onClose, custId, contract, onSaved }) {
     {!custId && !contract && <div className="mb-4"><Select label="Customer" value={pick} onChange={(e) => { setPick(e.target.value); if (e.target.value) load(Number(e.target.value)); }} options={[['', 'Choose the shop…'], ...custs.map((c) => ({ value: String(c.CUST_ID), label: `${c.SHOP_NAME} (${c.SHOP_CODE})`, hint: c.HDD }))]} autoFocus /></div>}
     {f && <form ref={formRef} onKeyDown={onKeyDown} onSubmit={(e) => { e.preventDefault(); save(false); }} className="grid gap-x-4 gap-y-3 sm:grid-cols-2" noValidate>
       <Input label="Start" type="date" value={f.START_DATE} onChange={(e) => setStart(e.target.value)} disabled={!draft} autoFocus={!!custId} />
-      <Input label="End (start + 365 days)" type="date" value={f.END_DATE} onChange={(e) => set('END_DATE', e.target.value)} disabled={!draft} />
+      <Input label="End (one year)" type="date" value={f.END_DATE} onChange={(e) => set('END_DATE', e.target.value)} disabled={!draft} />
       <Input label="Amount (AED, before VAT)" type="number" step="0.01" min="0" value={f.AMOUNT} onChange={(e) => set('AMOUNT', e.target.value)} className="[&_input]:num [&_input]:text-right" />
       <Input label="VAT %" type="number" step="0.01" min="0" max="100" value={f.VAT_PRC} onChange={(e) => set('VAT_PRC', e.target.value)} className="[&_input]:num [&_input]:text-right" />
       <div className="vbar sm:col-span-2 justify-between"><span className="text-muted">VAT AED {fmt(vatAmt)}</span><span className="num text-[15px] font-semibold">Total AED {fmt(total)}</span></div>

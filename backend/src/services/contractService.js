@@ -13,31 +13,30 @@ import { audit } from './audit.js';
  * ERP licence end (still live) or today.
  */
 export const CONTRACT_COLS = `K.CONTRACT_ID, K.CUST_ID, C.SHOP_CODE, C.SHOP_NAME, C.HDD, C.SERVER_ID, S.NAME AS SERVER_NAME, K.CONTRACT_NO, K.START_DATE, K.END_DATE, K.AMOUNT, K.VAT_PRC, K.VAT_AMT, K.TOTAL, K.COVERS_SUPPORT, K.COVERS_UPDATES, K.VISITS_INCLUDED, K.TILLS, K.PLAN_CODE, K.STATUS, K.RENEWED_FROM,
-  K.PUSH_STATUS, K.PUSH_MSG, K.PUSH_AT, K.REMARK, K.USER_ID, U.USER_NAME, K.ENTRY_DATE, K.EDIT_DATE, DATEDIFF(day, CAST(SYSUTCDATETIME() AS DATE), K.END_DATE) AS DAYS_LEFT,
+  K.PUSH_STATUS, K.PUSH_MSG, K.PUSH_AT, K.REMARK, K.USER_ID, U.USER_NAME, K.ENTRY_DATE, K.EDIT_DATE, DATEDIFF(day, CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE), K.END_DATE) AS DAYS_LEFT,
   (SELECT TOP 1 I.INV_NO FROM AMC_INVOICE I WHERE I.CONTRACT_ID = K.CONTRACT_ID AND I.STATUS <> 'CANCELLED') AS INV_NO, (SELECT TOP 1 I.INV_ID FROM AMC_INVOICE I WHERE I.CONTRACT_ID = K.CONTRACT_ID AND I.STATUS <> 'CANCELLED') AS INV_ID,
   (SELECT ISNULL(SUM(I.TOTAL - I.PAID), 0) FROM AMC_INVOICE I WHERE I.CONTRACT_ID = K.CONTRACT_ID AND I.STATUS <> 'CANCELLED') AS BALANCE,
   (SELECT COUNT(*) FROM AMC_VISIT V WHERE V.CUST_ID = K.CUST_ID AND V.STATUS = 'DONE' AND V.VISIT_DATE BETWEEN K.START_DATE AND K.END_DATE) AS VISITS_USED`;
 export const CONTRACT_FROM = 'FROM AMC_CONTRACT K JOIN AMC_CUSTOMER C ON C.CUST_ID = K.CUST_ID LEFT JOIN AMC_SERVER S ON S.SERVER_ID = C.SERVER_ID LEFT JOIN AMC_USER U ON U.USER_ID = K.USER_ID';
 const shape = (k) => ({ ...k, COVERS_SUPPORT: !!k.COVERS_SUPPORT, COVERS_UPDATES: !!k.COVERS_UPDATES, START_DATE: iso(k.START_DATE), END_DATE: iso(k.END_DATE) });
 /** LIVE contracts past their end read EXPIRED — kept true on every read. */
-export const expireContracts = async () => (await rq()).query("UPDATE AMC_CONTRACT SET STATUS = 'EXPIRED', EDIT_DATE = SYSUTCDATETIME() WHERE STATUS = 'LIVE' AND END_DATE < CAST(SYSUTCDATETIME() AS DATE)");
+export const expireContracts = async () => (await rq()).query("UPDATE AMC_CONTRACT SET STATUS = 'EXPIRED', EDIT_DATE = SYSUTCDATETIME() WHERE STATUS = 'LIVE' AND END_DATE < CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE)");
 export async function getContract(id) { await expireContracts(); const r = (await (await rq()).input('id', sql.Int, id).query(`SELECT ${CONTRACT_COLS} ${CONTRACT_FROM} WHERE K.CONTRACT_ID = @id`)).recordset[0]; return r ? shape(r) : null; }
 export async function listContracts({ q = '', status = '', custId = 0, expiring = '' } = {}) {
   await expireContracts();
   const where = ['1 = 1'];
   if (q) where.push('(K.CONTRACT_NO LIKE @q OR C.SHOP_CODE LIKE @q OR C.SHOP_NAME LIKE @q OR C.HDD LIKE @q)');
   if (status) where.push('K.STATUS = @status'); if (custId) where.push('K.CUST_ID = @cust');
-  if (expiring === '30') where.push("K.STATUS = 'LIVE' AND K.END_DATE <= DATEADD(day, 30, CAST(SYSUTCDATETIME() AS DATE))");
+  if (expiring === '30') where.push("K.STATUS = 'LIVE' AND K.END_DATE <= DATEADD(day, 30, CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE))");
   const r = await (await rq()).input('q', sql.NVarChar(120), `%${q}%`).input('status', sql.VarChar(10), String(status).toUpperCase()).input('cust', sql.Int, Number(custId) || 0).query(`SELECT ${CONTRACT_COLS} ${CONTRACT_FROM} WHERE ${where.join(' AND ')} ORDER BY K.END_DATE DESC, K.CONTRACT_ID DESC`);
   return r.recordset.map(shape);
 }
 /** What a new contract for this shop starts from: the previous contract (dates, amount, cover), the licence, the VAT rate. */
 export async function contractDefaults(custId) {
-  const c = (await (await rq()).input('id', sql.Int, custId).query('SELECT CUST_ID, SHOP_CODE, SHOP_NAME, LIC_END, TILLS, PLAN_CODE FROM AMC_CUSTOMER WHERE CUST_ID = @id')).recordset[0];
+  const c = (await (await rq()).input('id', sql.Int, custId).query('SELECT CUST_ID, SHOP_CODE, SHOP_NAME, LIC_START, LIC_END, INSTALL_DATE, TILLS, PLAN_CODE FROM AMC_CUSTOMER WHERE CUST_ID = @id')).recordset[0];
   if (!c) throw notFound('Customer not found');
   const prev = (await (await rq()).input('id', sql.Int, custId).query("SELECT TOP 1 CONTRACT_ID, CONTRACT_NO, END_DATE, AMOUNT, VAT_PRC, COVERS_SUPPORT, COVERS_UPDATES, VISITS_INCLUDED, STATUS FROM AMC_CONTRACT WHERE CUST_ID = @id AND STATUS IN ('LIVE', 'EXPIRED') ORDER BY END_DATE DESC")).recordset[0];
-  const base = prev ? prev.END_DATE : c.LIC_END;
-  const start = renewalStart(base); const vat = Number(await getSetting('VAT_PRC'));
+  const start = prev ? renewalStart(prev.END_DATE) : iso(c.LIC_START || c.INSTALL_DATE) || today(); const vat = Number(await getSetting('VAT_PRC'));
   return { customer: c, previous: prev ? { ...prev, END_DATE: iso(prev.END_DATE) } : null, START_DATE: start, END_DATE: yearEnd(start), AMOUNT: prev ? Number(prev.AMOUNT) : 0, VAT_PRC: vat, COVERS_SUPPORT: prev ? !!prev.COVERS_SUPPORT : true, COVERS_UPDATES: prev ? !!prev.COVERS_UPDATES : true, VISITS_INCLUDED: prev ? prev.VISITS_INCLUDED : 0, TILLS: c.TILLS || null, PLAN_CODE: c.PLAN_CODE || null, RENEWED_FROM: prev?.CONTRACT_ID || null, licenceDays: LICENCE_DAYS };
 }
 const money = (v) => Math.round((Number(v) || 0) * 100) / 100;
@@ -54,8 +53,8 @@ export async function createContract(ctx, b) {
   const custId = Number(b.CUST_ID); const c = (await (await rq()).input('id', sql.Int, custId).query('SELECT CUST_ID, SERVER_ID, SHOP_CODE FROM AMC_CUSTOMER WHERE CUST_ID = @id')).recordset[0];
   if (!c) throw notFound('Customer not found');
   const d = readBody(b, { forNew: true }); const vatPrc = d.vatPrc ?? Number(await getSetting('VAT_PRC')); const vatAmt = money(d.amount * vatPrc / 100);
-  const live = (await (await rq()).input('id', sql.Int, custId).input('s', sql.Date, d.start).input('e', sql.Date, d.end).query("SELECT CONTRACT_NO FROM AMC_CONTRACT WHERE CUST_ID = @id AND STATUS = 'LIVE' AND START_DATE < @e AND END_DATE > @s")).recordset[0];
-  if (live && d.status === 'LIVE') throw new HttpError(409, `${live.CONTRACT_NO} is already live for these dates — start the renewal on the day it ends.`, 'OVERLAP');
+  const live = (await (await rq()).input('id', sql.Int, custId).input('s', sql.Date, d.start).input('e', sql.Date, d.end).query("SELECT CONTRACT_NO FROM AMC_CONTRACT WHERE CUST_ID = @id AND STATUS = 'LIVE' AND START_DATE <= @e AND END_DATE >= @s")).recordset[0];
+  if (live && d.status === 'LIVE') throw new HttpError(409, `${live.CONTRACT_NO} is already live for these dates — start the renewal the day after it ends.`, 'OVERLAP');
   const id = await withNo('CONTRACT', async (no) => (await (await rq()).input('c', sql.Int, custId).input('no', sql.VarChar(20), no).input('s', sql.Date, d.start).input('e', sql.Date, d.end).input('a', sql.Decimal(18, 2), d.amount).input('vp', sql.Decimal(5, 2), vatPrc).input('va', sql.Decimal(18, 2), vatAmt).input('t', sql.Decimal(18, 2), money(d.amount + vatAmt))
     .input('cs', sql.Bit, d.coversSupport).input('cu', sql.Bit, d.coversUpdates).input('v', sql.Int, d.visits).input('ti', sql.Int, d.tills).input('pl', sql.VarChar(20), d.plan).input('st', sql.VarChar(10), 'DRAFT').input('rf', sql.Int, Number(b.RENEWED_FROM) || null).input('rm', sql.NVarChar(1000), d.remark).input('u', sql.Int, ctx.userId)
     .query('INSERT INTO AMC_CONTRACT (CUST_ID, CONTRACT_NO, START_DATE, END_DATE, AMOUNT, VAT_PRC, VAT_AMT, TOTAL, COVERS_SUPPORT, COVERS_UPDATES, VISITS_INCLUDED, TILLS, PLAN_CODE, STATUS, RENEWED_FROM, REMARK, USER_ID) OUTPUT inserted.CONTRACT_ID VALUES (@c, @no, @s, @e, @a, @vp, @va, @t, @cs, @cu, @v, @ti, @pl, @st, @rf, @rm, @u)')).recordset[0].CONTRACT_ID);
@@ -84,7 +83,7 @@ export async function setStatus(ctx, id, status) {
     if (k.STATUS === 'LIVE') return { contract: k };
     if (k.STATUS !== 'DRAFT') throw badRequest(`A ${k.STATUS.toLowerCase()} contract cannot be made live.`);
     if (k.END_DATE < today()) throw badRequest('This contract has already ended — fix the dates first.');
-    const clash = (await (await rq()).input('id', sql.Int, k.CUST_ID).input('me', sql.Int, id).input('s', sql.Date, k.START_DATE).input('e', sql.Date, k.END_DATE).query("SELECT CONTRACT_NO FROM AMC_CONTRACT WHERE CUST_ID = @id AND CONTRACT_ID <> @me AND STATUS = 'LIVE' AND START_DATE < @e AND END_DATE > @s")).recordset[0];
+    const clash = (await (await rq()).input('id', sql.Int, k.CUST_ID).input('me', sql.Int, id).input('s', sql.Date, k.START_DATE).input('e', sql.Date, k.END_DATE).query("SELECT CONTRACT_NO FROM AMC_CONTRACT WHERE CUST_ID = @id AND CONTRACT_ID <> @me AND STATUS = 'LIVE' AND START_DATE <= @e AND END_DATE >= @s")).recordset[0];
     if (clash) throw new HttpError(409, `${clash.CONTRACT_NO} is already live for these dates.`, 'OVERLAP');
     await (await rq()).input('id', sql.Int, id).query("UPDATE AMC_CONTRACT SET STATUS = 'LIVE', EDIT_DATE = SYSUTCDATETIME() WHERE CONTRACT_ID = @id");
     await audit(ctx, 'AMC_CONTRACT', k.CONTRACT_NO, 'LIVE');

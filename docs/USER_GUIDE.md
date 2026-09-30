@@ -8,6 +8,8 @@ Open it at the Vercel address. Sign in with your first name and your mobile numb
 Keyboard: `⌘K` / `Ctrl+K` search and jump anywhere · `Alt+C` party master · `Alt+T` tickets · `Alt+V` visits · `Alt+N` new record on most lists ·
 `Enter` moves to the next field in every form · `Esc` closes a pop-up · `⌘P` / `Ctrl+P` prints a print page.
 
+Days left everywhere are counted in Dubai days, so they drop by one at midnight UAE time.
+
 ## Who sees what
 | Role | Can do | Cannot do |
 |---|---|---|
@@ -21,9 +23,9 @@ Keyboard: `⌘K` / `Ctrl+K` search and jump anywhere · `Alt+C` party master · 
 
 ### Dashboard
 The morning view. Six tiles: licences ending in 30 days, licences expired, AMCs ending in 30 days (with how many shops have no AMC),
-outstanding money (owner / accounts only), open tickets by priority and how many are past their response time, servers offline.
+outstanding money (owner / accounts only), open tickets by priority and how many are past their response time.
 Below: the shops whose licence ends soonest with the contact's number, the open tickets with their SLA timer, today's visits,
-overdue invoices, offline servers and the last actions taken in DcAMC. Every tile and row opens the screen behind it.
+overdue invoices and the last actions taken in DcAMC. Every tile and row opens the screen behind it.
 
 ### Notifications
 The bell at the top right shows the unread count and the latest few; the Notifications page lists them all.
@@ -43,7 +45,7 @@ signed in on ("Sign out other devices").
 ### Party master
 The customers, the way the India AMC software keeps them: **every party on the left, its details on the right**. Click a party
 to see and edit it; **New party** (`Alt+N`) opens a blank form. Search (`/`) by name, code, contact, mobile or city; filter by
-ending in 30 days, expired, no AMC, money due, server offline, and current / left us.
+ending in 30 days, expired, no AMC, money due, and current / left us.
 
 Fields, top to bottom:
 | Field | Notes |
@@ -54,7 +56,7 @@ Fields, top to bottom:
 | Contact person, customer type | Type is New, Existing or Converted. |
 | Address 1, Address 2, area, city, emirate, state / country, pin code | |
 | Mobile, phone, e-mail, TRN | Mobile with country code (971…); the TRN goes on the tax invoice. |
-| Installation date | Pick a date — **AMC start takes the same date** and **AMC end is set 365 days later** by itself. |
+| Installation date | Pick a date — **AMC start takes the same date** and **AMC end is one year later, minus a day** (22/09/2026 → 21/09/2027), by itself. |
 | Birth date, tills | |
 | Installation amount | Owner / accounts only. On save, one **installation invoice** is raised for it (plus VAT). |
 | Recognition code (HDD), Shop ID | Leave blank: the code is made as DC + serial + W + type letter + installer (DC0002WPMV), the Shop ID from the name. |
@@ -83,12 +85,6 @@ Open a lead to see every follow-up, newest first. **Note follow-up** records wha
 (`Ctrl+Enter` saves). Leads whose time has passed turn red and appear in the owner's notifications.
 **Won → party** makes the party in Party master with what the lead knew, installation date today.
 
-### ERP servers
-One row per customer ERP server (owner only; the same as Settings → Servers & link keys). **Add server** shows its link key
-**once**; put `AMC_URL` and `AMC_KEY` in that ERP's `.env` and restart its service, and its shops arrive with the first heartbeat.
-Shows online / offline (no heartbeat for 48 h), last heartbeat, ERP version, pending database scripts and number of shops.
-**Test** pings the ERP with the key; **New key** replaces it.
-
 ---
 
 ## AMC
@@ -98,8 +94,8 @@ All AMC contracts across every party with status **Draft / Live / Expired / Canc
 (money roles). Tiles filter by live, ending in 30 days, drafts, expired. **New / renew** opens the editor; pick the party first.
 
 **How a contract works**
-1. Start defaults to the current expiry (the previous AMC's end, or the licence end from the ERP) while it is still live, else today.
-   End is start + 365 days. Amount and cover default from the last contract; VAT from Settings.
+1. The first AMC starts on the party's licence / installation start; a renewal starts the day after the previous AMC ends.
+   End is one year later minus a day (22/09/2026 → 21/09/2027, 22/09/2027 → 21/09/2028). Amount and cover default from the last contract; VAT from Settings.
 2. **Save as draft** keeps it without touching anything.
 3. **Make live** marks it live and raises its one **tax invoice** (INV-…). Nothing is sent to the ERP.
 4. **Edit** on a live contract changes cover, remark, visits, tills, software type; dates are fixed, and the amount only while
@@ -193,7 +189,6 @@ switch a login off. You cannot demote or deactivate yourself.
 | SLA & reminders | Response hours per priority; the daily reminder time (Dubai); the team's WhatsApp number and e-mail. |
 | E-mail (SMTP) | The mailbox reminders and invoices go from (Gmail needs an App password). |
 | WhatsApp | DataCare Chat endpoint, the licence (HDD), and the **TYPE** — sent exactly as typed, it is case-sensitive. |
-| Servers & link keys | Same as Party → ERP servers. |
 | Field update | Applies any new database script after a backend update. Safe to press again; shows what is pending. |
 
 ### Audit log

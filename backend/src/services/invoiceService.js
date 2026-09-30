@@ -7,14 +7,14 @@ import { audit } from './audit.js';
 
 /** Tax invoices (one per contract) and receipts. PAID on the invoice always equals the sum of its live payments. */
 export const INV_COLS = `I.INV_ID, I.INV_NO, I.KIND, I.CONTRACT_ID, K.CONTRACT_NO, I.CUST_ID, C.SHOP_CODE, C.SHOP_NAME, I.INV_DATE, I.DUE_DATE, I.DESCRIPTION, I.AMOUNT, I.VAT_PRC, I.VAT_AMT, I.TOTAL, I.PAID, I.TOTAL - I.PAID AS BALANCE, I.STATUS, I.REMARK, I.ENTRY_DATE,
-  CASE WHEN I.STATUS = 'OPEN' AND I.DUE_DATE < CAST(SYSUTCDATETIME() AS DATE) THEN DATEDIFF(day, I.DUE_DATE, CAST(SYSUTCDATETIME() AS DATE)) ELSE 0 END AS DAYS_OVERDUE`;
+  CASE WHEN I.STATUS = 'OPEN' AND I.DUE_DATE < CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE) THEN DATEDIFF(day, I.DUE_DATE, CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE)) ELSE 0 END AS DAYS_OVERDUE`;
 export const INV_FROM = 'FROM AMC_INVOICE I JOIN AMC_CUSTOMER C ON C.CUST_ID = I.CUST_ID LEFT JOIN AMC_CONTRACT K ON K.CONTRACT_ID = I.CONTRACT_ID';
 const shape = (i) => ({ ...i, INV_DATE: iso(i.INV_DATE), DUE_DATE: iso(i.DUE_DATE) });
 export async function getInvoice(id) { const r = (await (await rq()).input('id', sql.Int, id).query(`SELECT ${INV_COLS} ${INV_FROM} WHERE I.INV_ID = @id`)).recordset[0]; return r ? shape(r) : null; }
 export async function listInvoices({ q = '', status = '', custId = 0, from = '', to = '' } = {}) {
   const where = ['1 = 1'];
   if (q) where.push('(I.INV_NO LIKE @q OR K.CONTRACT_NO LIKE @q OR C.SHOP_CODE LIKE @q OR C.SHOP_NAME LIKE @q)');
-  if (status === 'OVERDUE') where.push("I.STATUS = 'OPEN' AND I.DUE_DATE < CAST(SYSUTCDATETIME() AS DATE)"); else if (status) where.push('I.STATUS = @status');
+  if (status === 'OVERDUE') where.push("I.STATUS = 'OPEN' AND I.DUE_DATE < CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE)"); else if (status) where.push('I.STATUS = @status');
   if (custId) where.push('I.CUST_ID = @cust'); if (from) where.push('I.INV_DATE >= @from'); if (to) where.push('I.INV_DATE <= @to');
   const r = await (await rq()).input('q', sql.NVarChar(120), `%${q}%`).input('status', sql.VarChar(10), String(status).toUpperCase()).input('cust', sql.Int, Number(custId) || 0).input('from', sql.Date, from || null).input('to', sql.Date, to || null).query(`SELECT ${INV_COLS} ${INV_FROM} WHERE ${where.join(' AND ')} ORDER BY I.INV_DATE DESC, I.INV_ID DESC`);
   return r.recordset.map(shape);

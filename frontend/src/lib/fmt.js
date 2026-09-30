@@ -23,3 +23,6 @@ export function downloadCsv(name, columns, rows) {
   const csv = [columns.map((c) => esc(c.label)).join(','), ...rows.map((r) => columns.map((c) => esc(typeof c.csv === 'function' ? c.csv(r) : r[c.key])).join(','))].join('\n');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })); a.download = `${name}.csv`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
+
+/** One AMC year, last day included: the same date next year minus a day (22/09/2026 → 21/09/2027). */
+export const yearEnd = (d) => { if (!d) return ''; const x = new Date(`${isoDate(d)}T00:00:00Z`); x.setUTCFullYear(x.getUTCFullYear() + 1); x.setUTCDate(x.getUTCDate() - 1); return x.toISOString().slice(0, 10); };

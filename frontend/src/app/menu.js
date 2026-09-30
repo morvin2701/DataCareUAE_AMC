@@ -13,7 +13,6 @@ export const MENU = [
   { key: 'party', icon: Building2, label: 'Party', items: [
     { to: '/customers', label: 'Party master', icon: Store, keywords: 'customer shop jeweller add new install hdd code licence' },
     { to: '/leads', label: 'Leads & follow-up', icon: Target, keywords: 'crm lead prospect demo follow up call proposal won lost' },
-    { to: '/servers', label: 'ERP servers', icon: Server, roles: [], keywords: 'link key heartbeat offline erp customer server' },
   ] },
   { key: 'amc', icon: FileSignature, label: 'AMC', items: [
     { to: '/contracts', label: 'AMC issue', icon: FileSignature, keywords: 'contract renew annual maintenance issue' },

@@ -9,19 +9,19 @@ const r = Router(); const money = requireRole('ACCOUNTS');
 const range = (q) => { const from = q.from && /^\d{4}-\d{2}-\d{2}$/.test(q.from) ? q.from : null; const to = q.to && /^\d{4}-\d{2}-\d{2}$/.test(q.to) ? q.to : null; return { from, to }; };
 r.get('/reports/expiring-licences', requireAuth, wrap(async (req, res) => {
   const days = Math.min(365, Math.max(0, parseInt(req.query.days, 10) || 30)); const expired = req.query.expired === '1';
-  const q = await (await rq()).input('d', sql.Int, days).query(`SELECT ${CUST_COLS} ${CUST_FROM} WHERE C.ACTIVE = 1 AND C.LIC_END IS NOT NULL AND ${expired ? 'C.LIC_END < CAST(SYSUTCDATETIME() AS DATE)' : 'DATEDIFF(day, CAST(SYSUTCDATETIME() AS DATE), C.LIC_END) BETWEEN 0 AND @d'} ORDER BY C.LIC_END`);
+  const q = await (await rq()).input('d', sql.Int, days).query(`SELECT ${CUST_COLS} ${CUST_FROM} WHERE C.ACTIVE = 1 AND C.LIC_END IS NOT NULL AND ${expired ? 'C.LIC_END < CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE)' : 'DATEDIFF(day, CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE), C.LIC_END) BETWEEN 0 AND @d'} ORDER BY C.LIC_END`);
   res.json({ success: true, rows: noMoney(req.ctx, q.recordset) });
 }));
 r.get('/reports/expiring-amcs', requireAuth, wrap(async (req, res) => {
   await expireContracts(); const days = Math.min(365, Math.max(0, parseInt(req.query.days, 10) || 30)); const expired = req.query.expired === '1';
-  const q = await (await rq()).input('d', sql.Int, days).query(`SELECT K.CONTRACT_ID, K.CONTRACT_NO, K.CUST_ID, C.SHOP_CODE, C.SHOP_NAME, C.HDD, C.CONTACT_NAME, C.MOBILE_NO, C.EMAIL_ID, K.START_DATE, K.END_DATE, K.STATUS, K.TOTAL, DATEDIFF(day, CAST(SYSUTCDATETIME() AS DATE), K.END_DATE) AS DAYS_LEFT,
+  const q = await (await rq()).input('d', sql.Int, days).query(`SELECT K.CONTRACT_ID, K.CONTRACT_NO, K.CUST_ID, C.SHOP_CODE, C.SHOP_NAME, C.HDD, C.CONTACT_NAME, C.MOBILE_NO, C.EMAIL_ID, K.START_DATE, K.END_DATE, K.STATUS, K.TOTAL, DATEDIFF(day, CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE), K.END_DATE) AS DAYS_LEFT,
     CASE WHEN EXISTS (SELECT 1 FROM AMC_CONTRACT R WHERE R.RENEWED_FROM = K.CONTRACT_ID AND R.STATUS IN ('LIVE', 'DRAFT')) THEN 1 ELSE 0 END AS RENEWED FROM AMC_CONTRACT K JOIN AMC_CUSTOMER C ON C.CUST_ID = K.CUST_ID
-    WHERE C.ACTIVE = 1 AND ${expired ? "K.STATUS = 'EXPIRED'" : "K.STATUS = 'LIVE' AND DATEDIFF(day, CAST(SYSUTCDATETIME() AS DATE), K.END_DATE) BETWEEN 0 AND @d"} ORDER BY K.END_DATE`);
+    WHERE C.ACTIVE = 1 AND ${expired ? "K.STATUS = 'EXPIRED'" : "K.STATUS = 'LIVE' AND DATEDIFF(day, CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE), K.END_DATE) BETWEEN 0 AND @d"} ORDER BY K.END_DATE`);
   res.json({ success: true, rows: noMoney(req.ctx, q.recordset.map((x) => ({ ...x, RENEWED: !!x.RENEWED }))) });
 }));
 r.get('/reports/outstanding', requireAuth, money, wrap(async (_req, res) => {
   const q = await (await rq()).query(`SELECT C.CUST_ID, C.SHOP_CODE, C.SHOP_NAME, C.CONTACT_NAME, C.MOBILE_NO, COUNT(*) AS INVOICES, SUM(I.TOTAL) AS TOTAL, SUM(I.PAID) AS PAID, SUM(I.TOTAL - I.PAID) AS BALANCE, MIN(I.DUE_DATE) AS OLDEST_DUE,
-    SUM(CASE WHEN I.DUE_DATE < CAST(SYSUTCDATETIME() AS DATE) THEN I.TOTAL - I.PAID ELSE 0 END) AS OVERDUE FROM AMC_INVOICE I JOIN AMC_CUSTOMER C ON C.CUST_ID = I.CUST_ID WHERE I.STATUS = 'OPEN' AND I.TOTAL - I.PAID > 0.004 GROUP BY C.CUST_ID, C.SHOP_CODE, C.SHOP_NAME, C.CONTACT_NAME, C.MOBILE_NO ORDER BY BALANCE DESC`);
+    SUM(CASE WHEN I.DUE_DATE < CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE) THEN I.TOTAL - I.PAID ELSE 0 END) AS OVERDUE FROM AMC_INVOICE I JOIN AMC_CUSTOMER C ON C.CUST_ID = I.CUST_ID WHERE I.STATUS = 'OPEN' AND I.TOTAL - I.PAID > 0.004 GROUP BY C.CUST_ID, C.SHOP_CODE, C.SHOP_NAME, C.CONTACT_NAME, C.MOBILE_NO ORDER BY BALANCE DESC`);
   res.json({ success: true, rows: q.recordset });
 }));
 r.get('/reports/collections', requireAuth, money, wrap(async (req, res) => {
