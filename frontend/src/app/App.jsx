@@ -15,6 +15,10 @@ import { Placeholder } from '../features/Placeholder.jsx';
 import { CustomersPage } from '../features/customers/CustomersPage.jsx';
 import { CustomerPage } from '../features/customers/CustomerPage.jsx';
 import { ServersPage } from '../features/settings/ServersPanel.jsx';
+import { ContractsPage } from '../features/contracts/ContractsPage.jsx';
+import { ContractPrintPage } from '../features/contracts/ContractPrintPage.jsx';
+import { InvoicesPage, PaymentsPage, OutstandingPage } from '../features/invoices/InvoicesPage.jsx';
+import { InvoicePrintPage, ReceiptPrintPage, StatementPrintPage } from '../features/invoices/InvoicePrintPage.jsx';
 import { MENU, allowed } from './menu.js';
 
 function Splash() { return <div className="flex min-h-screen items-center justify-center bg-surface-2/40"><PageLoader title="Signing you in" hint="Restoring your session" /></div>; }
@@ -33,7 +37,7 @@ function RightGuard({ children }) {
   return children;
 }
 function Public({ children }) { const { status } = useAuth(); if (status === 'loading') return <Splash />; return status === 'authenticated' ? <Navigate to="/" replace /> : children; }
-const PAGES = { '/': DashboardPage, '/profile': ProfilePage, '/users': UsersPage, '/settings': SettingsPage, '/audit': AuditPage, '/customers': CustomersPage, '/servers': ServersPage };
+const PAGES = { '/': DashboardPage, '/profile': ProfilePage, '/users': UsersPage, '/settings': SettingsPage, '/audit': AuditPage, '/customers': CustomersPage, '/servers': ServersPage, '/contracts': ContractsPage, '/invoices': InvoicesPage, '/payments': PaymentsPage, '/outstanding': OutstandingPage };
 export function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
@@ -44,6 +48,10 @@ export function App() {
           <Route element={<Private><AppShell /></Private>}>
             <Route index element={<DashboardPage />} />
             <Route path="customers/:id" element={<CustomerPage />} />
+            <Route path="customers/:id/statement" element={<StatementPrintPage />} />
+            <Route path="contracts/:id/print" element={<ContractPrintPage />} />
+            <Route path="invoices/:id/print" element={<InvoicePrintPage />} />
+            <Route path="payments/:id/print" element={<ReceiptPrintPage />} />
             {MENU.flatMap((g) => g.items).filter((i) => i.to !== '/').map((i) => { const P = PAGES[i.to] || Placeholder; return <Route key={i.to} path={i.to.slice(1)} element={<P />} />; })}
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
