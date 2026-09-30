@@ -15,11 +15,12 @@ import ticketsRoutes from './routes/tickets.js';
 import remindersRoutes from './routes/reminders.js';
 import reportsRoutes from './routes/reports.js';
 import dashboardRoutes from './routes/dashboard.js';
+import backupRoutes from './routes/backup.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 const PRIVATE_HOST = /^(localhost|127\.0\.0\.1|\[::1\]|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/;
 const isPrivateOrigin = (origin) => { try { return PRIVATE_HOST.test(new URL(origin).hostname); } catch { return false; } };
-export const ROUTES = [healthRoutes, linkRoutes, authRoutes, usersRoutes, maintenanceRoutes, settingsRoutes, serversRoutes, customersRoutes, contractsRoutes, invoicesRoutes, ticketsRoutes, remindersRoutes, reportsRoutes, dashboardRoutes];
+export const ROUTES = [healthRoutes, linkRoutes, authRoutes, usersRoutes, maintenanceRoutes, settingsRoutes, serversRoutes, customersRoutes, contractsRoutes, invoicesRoutes, ticketsRoutes, remindersRoutes, reportsRoutes, dashboardRoutes, backupRoutes];
 
 export function createApp(extraRoutes = []) {
   const app = express();

@@ -22,6 +22,7 @@ import { InvoicePrintPage, ReceiptPrintPage, StatementPrintPage } from '../featu
 import { TicketsPage } from '../features/tickets/TicketsPage.jsx';
 import { VisitsPage } from '../features/visits/VisitsPage.jsx';
 import { RemindersPage } from '../features/reminders/RemindersPage.jsx';
+import { BackupPage } from '../features/settings/BackupPage.jsx';
 import { ExpiringLicencesPage, ExpiringAmcsPage, OutstandingReportPage, CollectionsPage, TicketsReportPage, VisitsReportPage, CustomerHistoryPage } from '../features/reports/ReportPages.jsx';
 import { MENU, allowed } from './menu.js';
 
@@ -41,7 +42,7 @@ function RightGuard({ children }) {
   return children;
 }
 function Public({ children }) { const { status } = useAuth(); if (status === 'loading') return <Splash />; return status === 'authenticated' ? <Navigate to="/" replace /> : children; }
-const PAGES = { '/': DashboardPage, '/profile': ProfilePage, '/users': UsersPage, '/settings': SettingsPage, '/audit': AuditPage, '/customers': CustomersPage, '/servers': ServersPage, '/contracts': ContractsPage, '/invoices': InvoicesPage, '/payments': PaymentsPage, '/outstanding': OutstandingPage, '/tickets': TicketsPage, '/visits': VisitsPage, '/reminders': RemindersPage, '/reports/expiring-licences': ExpiringLicencesPage, '/reports/expiring-amcs': ExpiringAmcsPage, '/reports/outstanding': OutstandingReportPage, '/reports/collections': CollectionsPage, '/reports/tickets': TicketsReportPage, '/reports/visits': VisitsReportPage, '/reports/customer-history': CustomerHistoryPage };
+const PAGES = { '/': DashboardPage, '/profile': ProfilePage, '/users': UsersPage, '/settings': SettingsPage, '/audit': AuditPage, '/customers': CustomersPage, '/servers': ServersPage, '/contracts': ContractsPage, '/invoices': InvoicesPage, '/payments': PaymentsPage, '/outstanding': OutstandingPage, '/tickets': TicketsPage, '/visits': VisitsPage, '/reminders': RemindersPage, '/backup': BackupPage, '/reports/expiring-licences': ExpiringLicencesPage, '/reports/expiring-amcs': ExpiringAmcsPage, '/reports/outstanding': OutstandingReportPage, '/reports/collections': CollectionsPage, '/reports/tickets': TicketsReportPage, '/reports/visits': VisitsReportPage, '/reports/customer-history': CustomerHistoryPage };
 export function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
