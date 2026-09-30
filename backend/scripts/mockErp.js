@@ -11,6 +11,7 @@ const eq = (a, b) => { const x = Buffer.from(String(a || '')), y = Buffer.from(S
 createServer((req, res) => {
   let body = ''; req.on('data', (c) => { body += c; }); req.on('end', () => {
     const send = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+    if (req.url === '/wa' && req.method === 'POST') { const p = JSON.parse(body || '{}'); console.log('whatsapp', p.TYPE, p.CUST_MO, p.DEFULT_MESS.slice(0, 60)); res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('{"status":"Message Sent Successfully"}'); }   // stands in for DataCare Chat
     if (!eq(req.headers['x-link-key'], key)) return send(401, { success: false, message: 'bad key' });
     if (req.url === '/api/link/ping') return send(200, { success: true, message: 'mock ERP answered', appVersion: 'mock-1' });
     if (req.url === '/api/link/licence' && req.method === 'POST') {

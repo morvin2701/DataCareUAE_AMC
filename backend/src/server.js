@@ -3,12 +3,13 @@ import { createApp } from './app.js';
 import { dbStatus } from './config/db.js';
 import { bootstrap } from './services/schemaService.js';
 import { seedOwner } from './services/authService.js';
+import { startReminderScheduler } from './services/reminderService.js';
 
 assertEnv();
 const app = createApp();
 const server = app.listen(env.port, async () => {
   console.log(`DcAMC backend listening on :${env.port} (${env.nodeEnv})`);
-  try { await bootstrap(); await seedOwner(); const db = await dbStatus(); console.log(db.ok ? `Database connected: ${db.server}/${db.db}` : `Database NOT reachable: ${db.error}`); }
+  try { await bootstrap(); await seedOwner(); const db = await dbStatus(); console.log(db.ok ? `Database connected: ${db.server}/${db.db}` : `Database NOT reachable: ${db.error}`); if (process.env.REMINDER_SCHEDULER !== '0') startReminderScheduler(); }
   catch (e) { console.error('Database not ready:', e.message, '(routes will retry on demand)'); }
 });
 server.keepAliveTimeout = 65000;

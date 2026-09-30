@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Store, ShieldCheck, CalendarClock, AlertTriangle, WifiOff, FileSignature } from 'lucide-react';
 import { customerService, serverService } from '../../services/amcService.js';
 import { useQuery, useDebounce } from '../../hooks/useQuery.js';
@@ -20,8 +20,8 @@ export function Expiry({ date, days, label }) {
 }
 /** Customers — the shops every heartbeat brings. No add form; open one to see its licence, AMC, tickets and visits. */
 export function CustomersPage() {
-  const nav = useNavigate(); const { money } = useRights();
-  const [q, setQ] = useState(''); const dq = useDebounce(q); const [f, setF] = useState({ plan: '', status: '', server: '', expiry: '', active: '1' });
+  const nav = useNavigate(); const { money } = useRights(); const [sp] = useSearchParams();
+  const [q, setQ] = useState(''); const dq = useDebounce(q); const [f, setF] = useState({ plan: '', status: '', server: '', expiry: sp.get('expiry') || '', active: '1' });
   const list = useQuery(() => customerService.list({ q: dq, ...f }), [dq, f]); const rows = list.data?.rows || [];
   const servers = useQuery(() => serverService.list(), []);
   useHotkeys({ '/': () => document.getElementById('cust-q')?.focus() }, []);

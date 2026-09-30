@@ -21,6 +21,8 @@ import { InvoicesPage, PaymentsPage, OutstandingPage } from '../features/invoice
 import { InvoicePrintPage, ReceiptPrintPage, StatementPrintPage } from '../features/invoices/InvoicePrintPage.jsx';
 import { TicketsPage } from '../features/tickets/TicketsPage.jsx';
 import { VisitsPage } from '../features/visits/VisitsPage.jsx';
+import { RemindersPage } from '../features/reminders/RemindersPage.jsx';
+import { ExpiringLicencesPage, ExpiringAmcsPage, OutstandingReportPage, CollectionsPage, TicketsReportPage, VisitsReportPage, CustomerHistoryPage } from '../features/reports/ReportPages.jsx';
 import { MENU, allowed } from './menu.js';
 
 function Splash() { return <div className="flex min-h-screen items-center justify-center bg-surface-2/40"><PageLoader title="Signing you in" hint="Restoring your session" /></div>; }
@@ -39,7 +41,7 @@ function RightGuard({ children }) {
   return children;
 }
 function Public({ children }) { const { status } = useAuth(); if (status === 'loading') return <Splash />; return status === 'authenticated' ? <Navigate to="/" replace /> : children; }
-const PAGES = { '/': DashboardPage, '/profile': ProfilePage, '/users': UsersPage, '/settings': SettingsPage, '/audit': AuditPage, '/customers': CustomersPage, '/servers': ServersPage, '/contracts': ContractsPage, '/invoices': InvoicesPage, '/payments': PaymentsPage, '/outstanding': OutstandingPage, '/tickets': TicketsPage, '/visits': VisitsPage };
+const PAGES = { '/': DashboardPage, '/profile': ProfilePage, '/users': UsersPage, '/settings': SettingsPage, '/audit': AuditPage, '/customers': CustomersPage, '/servers': ServersPage, '/contracts': ContractsPage, '/invoices': InvoicesPage, '/payments': PaymentsPage, '/outstanding': OutstandingPage, '/tickets': TicketsPage, '/visits': VisitsPage, '/reminders': RemindersPage, '/reports/expiring-licences': ExpiringLicencesPage, '/reports/expiring-amcs': ExpiringAmcsPage, '/reports/outstanding': OutstandingReportPage, '/reports/collections': CollectionsPage, '/reports/tickets': TicketsReportPage, '/reports/visits': VisitsReportPage, '/reports/customer-history': CustomerHistoryPage };
 export function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
