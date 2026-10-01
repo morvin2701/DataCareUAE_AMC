@@ -111,9 +111,11 @@ An invoice with no money against it can be cancelled from the customer's Payment
 Every receipt against any invoice: date, shop, invoice, mode (cash / bank / cheque / card), reference, amount, who took it. Filter by period and mode.
 Cancelling a receipt puts the money back on the invoice balance. **Print** gives the A4 receipt.
 
-**Receiving money:** from Invoices, Outstanding or the customer's Payments tab press **Receive** → date, mode, reference,
-amount (defaults to the full balance; more than the balance is refused) → **Record receipt**. The invoice turns **Paid** when
-the balance reaches zero.
+**Receiving money:** on AMC received press **Receive payment** (`Alt+N`) → choose the **party** → its open invoices appear
+(AMC, installation, upgrade), the oldest selected with its full balance → date, mode, reference, amount (part payment is fine;
+more than the balance is refused) → **Record receipt**. The receipt opens ready to print. The same **Receive** button is on
+Party master, Invoices, Outstanding and the party's Payments tab. If the party has nothing due, issue its AMC first
+(AMC issue → New / renew → Make live); the dialog offers a button for that.
 
 ### Outstanding
 Every open invoice with money due, oldest due date first, with days overdue and the contact for the call. **Receive** and

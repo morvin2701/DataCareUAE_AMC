@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Save, X, Trash2, Printer, ExternalLink, Store, ShieldCheck, CalendarClock, Coins } from 'lucide-react';
+import { Plus, Save, X, Trash2, Printer, ExternalLink, Store, ShieldCheck, CalendarClock, Coins, Wallet } from 'lucide-react';
+import { ReceiveDialog } from '../invoices/ReceiveDialog.jsx';
 import { customerService } from '../../services/amcService.js';
 import { useQuery, useDebounce } from '../../hooks/useQuery.js';
 import { useHotkeys } from '../../hooks/useHotkeys.js';
@@ -30,7 +31,7 @@ export function PartyMasterPage() {
   const nav = useNavigate(); const toast = useToast(); const { support, money } = useRights(); const team = useTeam(); const [sp] = useSearchParams();
   const [q, setQ] = useState(''); const dq = useDebounce(q); const [flt, setFlt] = useState({ expiry: sp.get('expiry') || '', active: '1' });
   const list = useQuery(() => customerService.list({ q: dq, ...flt }), [dq, flt]); const rows = list.data?.rows || [];
-  const [cur, setCur] = useState(null); const [f, setF] = useState(EMPTY); const [dirty, setDirty] = useState(false); const [busy, setBusy] = useState(false); const [ask, setAsk] = useState(false); const [meta, setMeta] = useState(null); const [changes, setChanges] = useState([]);
+  const [cur, setCur] = useState(null); const [f, setF] = useState(EMPTY); const [dirty, setDirty] = useState(false); const [busy, setBusy] = useState(false); const [ask, setAsk] = useState(false); const [recv, setRecv] = useState(false); const [meta, setMeta] = useState(null); const [changes, setChanges] = useState([]);
   useEffect(() => { customerService.meta().then(setMeta).catch(() => {}); }, []);
   useEffect(() => { if (!cur && rows.length && !sp.get('new')) pick(rows[0]); if (sp.get('new')) openNew(); }, [rows.length]); // eslint-disable-line
   const pick = async (c) => { setCur(c); setF(toForm(c)); setDirty(false); try { const r = await customerService.get(c.CUST_ID); setChanges(r.changes || []); } catch { setChanges([]); } };
@@ -67,7 +68,7 @@ export function PartyMasterPage() {
         {!cur ? <div className="p-10 text-center text-[13px] text-muted">Select a party on the left, or add a new one.</div> : <>
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5">
             <div className="min-w-0"><div className="truncate text-[15px] font-semibold">{cur.isNew ? 'New party' : cur.SHOP_NAME}</div>{!cur.isNew && <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted"><span className="font-mono">{cur.HDD || 'no code'}</span>{cur.SOURCE === 'ERP' && <Badge tone="info">from ERP</Badge>}<Badge tone={cur.STATUS === 'ACTIVE' ? 'ok' : 'bad'}>{cur.STATUS}</Badge>{!cur.ACTIVE && <Badge tone="bad">Left us</Badge>}<span>Licence <Expiry date={cur.LIC_END} days={cur.LIC_DAYS} /></span>{cur.AMC_NO ? <span>AMC {cur.AMC_NO} · <Expiry date={cur.AMC_END} days={cur.AMC_DAYS} /></span> : <span className="text-warn">No AMC</span>}</div>}</div>
-            {!cur.isNew && <div className="flex flex-wrap gap-1.5"><Button type="button" variant="ghost" icon={ExternalLink} onClick={() => nav(`/customers/${cur.CUST_ID}`)}>Open</Button><Button type="button" variant="ghost" icon={Printer} onClick={() => window.print()}>Print</Button></div>}
+            {!cur.isNew && <div className="flex flex-wrap gap-1.5">{money && <Button type="button" variant="soft" icon={Wallet} onClick={() => setRecv(true)}>Receive</Button>}<Button type="button" variant="ghost" icon={ExternalLink} onClick={() => nav(`/customers/${cur.CUST_ID}`)}>Open</Button><Button type="button" variant="ghost" icon={Printer} onClick={() => window.print()}>Print</Button></div>}
           </div>
           <div className="print-page grid gap-x-4 gap-y-2 p-4 md:grid-cols-2 xl:grid-cols-3 [&_.input]:!h-8 [&_.input]:!text-[13px] [&_.label]:!mb-0.5 [&_.label]:!text-[11.5px] [&_textarea.input]:!h-auto">
             <Input id="p-name" label="AC name (shop)" className="md:col-span-2 xl:col-span-2" {...bind('SHOP_NAME')} disabled={fromErp} />
@@ -91,6 +92,7 @@ export function PartyMasterPage() {
         </>}
       </form>
     </div>
+    <ReceiveDialog open={recv} onClose={() => setRecv(false)} custId={cur?.CUST_ID} onSaved={() => { list.refetch(); if (cur) customerService.get(cur.CUST_ID).then((r) => setCur(r.customer)).catch(() => {}); }} />
     <ConfirmDialog open={ask} onClose={() => setAsk(false)} busy={busy} onConfirm={remove} title={`Delete ${cur?.SHOP_NAME}?`} message="A party with contracts, invoices, tickets or visits on record is switched off instead, so nothing is lost." confirmLabel="Delete" />
   </div>;
 }
