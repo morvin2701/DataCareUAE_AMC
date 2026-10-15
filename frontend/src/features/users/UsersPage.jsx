@@ -15,7 +15,7 @@ import { DataTable } from '../../components/ui/DataTable.jsx';
 import { displayMobile, formatDate, rel, initials } from '../../lib/fmt.js';
 
 const ROLES = [{ value: 'OWNER', label: 'Owner', hint: 'everything' }, { value: 'ACCOUNTS', label: 'Accounts', hint: 'contracts, invoices, payments, reports' }, { value: 'SUPPORT', label: 'Support', hint: 'customers, tickets, visits — no money' }];
-const EMPTY = { LOGIN_NAME: '', USER_NAME: '', ROLE: 'SUPPORT', MOBILE_NO: '', EMAIL_ID: '', password: '', CHANGE_PWD: true, ACTIVE: true };
+const EMPTY = { LOGIN_NAME: '', USER_NAME: '', ROLE: 'OWNER', MOBILE_NO: '', EMAIL_ID: '', password: '', CHANGE_PWD: true, ACTIVE: true };
 const toForm = (u) => ({ ...EMPTY, ...u, MOBILE_NO: u.MOBILE_NO || '', EMAIL_ID: u.EMAIL_ID || '', password: '', CHANGE_PWD: !!u.CHANGE_PWD, ACTIVE: !!u.ACTIVE });
 /** Users & roles — DcAMC's own logins. OWNER everything · ACCOUNTS money and contracts · SUPPORT customers, tickets, visits. */
 export function UsersPage() {
@@ -36,7 +36,7 @@ export function UsersPage() {
   const roleLabel = (r) => ROLES.find((x) => x.value === r)?.label || r;
   return (
     <div className="w-full">
-      <PageHeader title="Users & roles" subtitle="DcAMC's own logins (AMC_USER). Owner: everything. Accounts: contracts, invoices, payments, reports. Support: customers, tickets, visits — read-only contracts, never money." actions={<Button icon={Plus} onClick={openNew} title="Alt+N">New user</Button>} />
+      <PageHeader title="Users & roles" subtitle="DcAMC's own logins. Every login has the same rights: everyone can add, change and delete everything. Role is kept only as a label." actions={<Button icon={Plus} onClick={openNew} title="Alt+N">New user</Button>} />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Kpi label="Users" value={rows.length} icon={Users} /><Kpi label="Active" value={rows.filter((u) => u.ACTIVE).length} icon={UserCheck} /><Kpi label="Online now" value={rows.filter((u) => u.LIVE_SESSIONS > 0).length} icon={Radio} /><Kpi label="Owners" value={rows.filter((u) => u.ROLE === 'OWNER').length} icon={ShieldCheck} /></div>
       <ErrorBox error={users.error} />
       <div className="space-y-4">

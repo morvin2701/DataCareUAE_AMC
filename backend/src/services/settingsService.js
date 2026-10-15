@@ -8,7 +8,7 @@ import { encrypt, decrypt } from '../utils/crypto.js';
 export const DEFAULTS = {
   COMPANY: { name: 'DataCare Softech FZCO', trn: '', address: 'Dubai, United Arab Emirates', mobile: '', email: '', website: '', logo: null, bank: '' },
   NUMBERING: { CONTRACT: 'AMC-', INVOICE: 'INV-', RECEIPT: 'RCP-', TICKET: 'TKT-', WIDTH: 5 },
-  VAT_PRC: 5,
+  VAT_PRC: 0,   // amounts typed are the full amount; set a % here only if VAT is to be added on top
   PRICES: { BASIC: 4000, PRO: 6000, ADVANCE: 8000, ENTERPRISE: 10000 },   // AED before VAT; the convert amount is the difference between two of these
   IDLE_MINUTES: 15,
   SECURITY: { LOCK_ATTEMPTS: 5, LOCK_MINUTES: 15, MIN_LEN: 8 },

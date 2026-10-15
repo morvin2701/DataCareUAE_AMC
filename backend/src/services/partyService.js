@@ -20,14 +20,14 @@ export const CUST_COLS = `C.CUST_ID, C.SOURCE, C.SERVER_ID, S.SERVER_CODE, S.NAM
   C.SHOP_CODE, C.SHOP_NAME, C.HDD, C.PLAN_CODE, C.STATUS, C.TILLS, C.LIC_START, C.LIC_END, C.CONTACT_NAME, C.MOBILE_NO, C.PHONE_NO, C.EMAIL_ID, C.EMIRATE_CODE, C.LAST_LOGIN, C.USERS, C.ENTRIES_TODAY, C.ENTRIES_30D, C.INSTALLER, C.NOTES, C.ACTIVE, C.LAST_SEEN, C.ENTRY_DATE,
   C.ADDRESS1, C.ADDRESS2, C.ADDRESS3, C.STATE_NAME, C.CITY, C.AREA, C.PIN_CODE, C.TRN_NO, C.INSTALL_DATE, C.BIRTH_DATE, C.INSTALL_AMT, C.CUST_TYPE, C.REF_BY, C.OLD_HDD, C.OLD_INSTALL_DATE, C.MAIN_PC_SERIAL, C.LAN_PC_SERIAL1, C.LAN_PC_SERIAL2, C.REMARK,
   CASE WHEN C.LIC_END IS NULL THEN NULL ELSE DATEDIFF(day, CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE), C.LIC_END) END AS LIC_DAYS,
-  A.CONTRACT_NO AS AMC_NO, A.END_DATE AS AMC_END, A.STATUS AS AMC_STATUS, CASE WHEN A.END_DATE IS NULL THEN NULL ELSE DATEDIFF(day, CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE), A.END_DATE) END AS AMC_DAYS,
+  A.CONTRACT_ID AS AMC_ID, A.CONTRACT_NO AS AMC_NO, A.START_DATE AS AMC_START, A.END_DATE AS AMC_END, A.STATUS AS AMC_STATUS, A.AMOUNT AS AMC_AMT, CASE WHEN A.END_DATE IS NULL THEN NULL ELSE DATEDIFF(day, CAST(DATEADD(hour, 4, SYSUTCDATETIME()) AS DATE), A.END_DATE) END AS AMC_DAYS,
   (SELECT ISNULL(SUM(I.TOTAL), 0) FROM AMC_INVOICE I WHERE I.CUST_ID = C.CUST_ID AND I.STATUS <> 'CANCELLED') AS BILLED,
   (SELECT ISNULL(SUM(I.PAID), 0) FROM AMC_INVOICE I WHERE I.CUST_ID = C.CUST_ID AND I.STATUS <> 'CANCELLED') AS RECEIVED,
   (SELECT ISNULL(SUM(I.TOTAL - I.PAID), 0) FROM AMC_INVOICE I WHERE I.CUST_ID = C.CUST_ID AND I.STATUS <> 'CANCELLED') AS OUTSTANDING,
   (SELECT COUNT(*) FROM AMC_TICKET T WHERE T.CUST_ID = C.CUST_ID AND T.STATUS <> 'CLOSED') AS OPEN_TICKETS`;
 export const CUST_FROM = `FROM AMC_CUSTOMER C LEFT JOIN AMC_SERVER S ON S.SERVER_ID = C.SERVER_ID
-  OUTER APPLY (SELECT TOP 1 CONTRACT_NO, END_DATE, STATUS FROM AMC_CONTRACT X WHERE X.CUST_ID = C.CUST_ID AND X.STATUS IN ('LIVE', 'EXPIRED', 'DRAFT') ORDER BY CASE X.STATUS WHEN 'LIVE' THEN 0 WHEN 'DRAFT' THEN 1 ELSE 2 END, X.END_DATE DESC) A`;
-const D = ['LIC_START', 'LIC_END', 'INSTALL_DATE', 'BIRTH_DATE', 'OLD_INSTALL_DATE', 'AMC_END'];
+  OUTER APPLY (SELECT TOP 1 CONTRACT_ID, CONTRACT_NO, START_DATE, END_DATE, STATUS, AMOUNT FROM AMC_CONTRACT X WHERE X.CUST_ID = C.CUST_ID AND X.STATUS IN ('LIVE', 'EXPIRED', 'DRAFT') ORDER BY CASE X.STATUS WHEN 'LIVE' THEN 0 WHEN 'DRAFT' THEN 1 ELSE 2 END, X.END_DATE DESC) A`;
+const D = ['LIC_START', 'LIC_END', 'INSTALL_DATE', 'BIRTH_DATE', 'OLD_INSTALL_DATE', 'AMC_START', 'AMC_END'];
 export const shape = (c) => { const o = { ...c, ACTIVE: !!c.ACTIVE, OFFLINE: !!c.OFFLINE }; for (const k of D) if (o[k]) o[k] = iso(o[k]); return o; };
 export async function getParty(id) { const r = (await (await rq()).input('id', sql.Int, id).query(`SELECT ${CUST_COLS} ${CUST_FROM} WHERE C.CUST_ID = @id`)).recordset[0]; return r ? shape(r) : null; }
 export async function listParties({ q = '', plan = '', status = '', server = '', expiry = '', active = '1', installer = '' } = {}) {
@@ -62,7 +62,7 @@ function read(b) {
   const install = date(b.INSTALL_DATE); const licStart = date(b.LIC_START) || install; const licEnd = date(b.LIC_END) || (licStart ? yearEnd(licStart) : null);
   return { name, plan, type, status, installer: str(b.INSTALLER, 10)?.toUpperCase().replace(/[^A-Z0-9]/g, '') || null, contact: str(b.CONTACT_NAME, 100), mobile: digits(b.MOBILE_NO, 20), phone: digits(b.PHONE_NO, 20), email: str(b.EMAIL_ID, 150),
     address1: str(b.ADDRESS1, 150), address2: str(b.ADDRESS2, 150), address3: str(b.ADDRESS3, 150), state: str(b.STATE_NAME, 60), city: str(b.CITY, 60), area: str(b.AREA, 60), emirate: str(b.EMIRATE_CODE, 3)?.toUpperCase(), pin: str(b.PIN_CODE, 10), trn: digits(b.TRN_NO, 20),
-    install, licStart, licEnd, birth: date(b.BIRTH_DATE), installAmt: money(b.INSTALL_AMT), tills: b.TILLS === '' || b.TILLS == null ? 0 : Math.max(0, parseInt(b.TILLS, 10) || 0), refBy: str(b.REF_BY, 100), oldHdd: str(b.OLD_HDD, 20)?.toUpperCase(), oldInstall: date(b.OLD_INSTALL_DATE),
+    install, licStart, licEnd, birth: date(b.BIRTH_DATE), installAmt: money(b.INSTALL_AMT), amcAmt: b.AMC_AMT === '' || b.AMC_AMT == null ? null : money(b.AMC_AMT), tills: b.TILLS === '' || b.TILLS == null ? 0 : Math.max(0, parseInt(b.TILLS, 10) || 0), refBy: str(b.REF_BY, 100), oldHdd: str(b.OLD_HDD, 20)?.toUpperCase(), oldInstall: date(b.OLD_INSTALL_DATE),
     pc1: str(b.MAIN_PC_SERIAL, 60), pc2: str(b.LAN_PC_SERIAL1, 60), pc3: str(b.LAN_PC_SERIAL2, 60), remark: str(b.REMARK, 500), notes: str(b.NOTES, 2000), hdd: str(b.HDD, 20)?.toUpperCase() || null, shopCode: str(b.SHOP_CODE, 20)?.toUpperCase().replace(/[^A-Z0-9]/g, '') || null };
 }
 const bind = (r, d) => r.input('name', sql.NVarChar(150), d.name).input('plan', sql.VarChar(20), d.plan).input('type', sql.VarChar(12), d.type).input('st', sql.VarChar(10), d.status).input('ins', sql.VarChar(10), d.installer).input('cn', sql.NVarChar(100), d.contact).input('mo', sql.VarChar(20), d.mobile).input('ph', sql.VarChar(20), d.phone).input('em', sql.NVarChar(150), d.email)
@@ -77,10 +77,45 @@ async function freeShopCode(want, name, exceptId = 0) {
   throw badRequest('Could not make a free shop code — type one.');
 }
 async function hddFree(hdd, exceptId) { if (!hdd) return; const hit = (await (await rq()).input('h', sql.VarChar(20), hdd).input('id', sql.Int, exceptId).query('SELECT SHOP_NAME FROM AMC_CUSTOMER WHERE HDD = @h AND CUST_ID <> @id')).recordset[0]; if (hit) throw new HttpError(409, `Code ${hdd} already belongs to ${hit.SHOP_NAME}.`, 'DUPLICATE'); }
-/** After a save: the installation bill once, and the convert amount when the software type moved up. */
-async function afterSave(ctx, id, d, prevPlan) {
+/** Set an invoice to a new amount (no money received yet), or cancel it when the amount is 0. */
+async function reprice(ctx, inv, amount) {
+  if (Math.abs(Number(inv.TOTAL) - amount) < 0.005 && Number(inv.VAT_AMT) === 0) return;
+  if (Number(inv.PAID) > 0) throw new HttpError(409, `Money was already received against ${inv.INV_NO} — cancel that receipt before changing the amount.`, 'PAID');
+  if (amount <= 0) { await (await rq()).input('id', sql.Int, inv.INV_ID).query("UPDATE AMC_INVOICE SET STATUS = 'CANCELLED', EDIT_DATE = SYSUTCDATETIME() WHERE INV_ID = @id"); await audit(ctx, 'AMC_INVOICE', inv.INV_NO, 'CANCEL', { reason: 'amount cleared on the party' }); return; }
+  const vatPrc = Number(await getSetting('VAT_PRC')) || 0; const vat = Math.round(amount * vatPrc) / 100;
+  await (await rq()).input('id', sql.Int, inv.INV_ID).input('a', sql.Decimal(18, 2), amount).input('vp', sql.Decimal(5, 2), vatPrc).input('va', sql.Decimal(18, 2), vat).input('t', sql.Decimal(18, 2), Math.round((amount + vat) * 100) / 100)
+    .query('UPDATE AMC_INVOICE SET AMOUNT = @a, VAT_PRC = @vp, VAT_AMT = @va, TOTAL = @t, EDIT_DATE = SYSUTCDATETIME() WHERE INV_ID = @id');
+  await audit(ctx, 'AMC_INVOICE', inv.INV_NO, 'REPRICE', { from: inv.TOTAL, to: amount + vat });
+}
+/**
+ * After a save: the installation bill and the AMC of the current year follow the amounts typed on the party.
+ *   Installation amount → one INSTALL invoice (made, re-priced while unpaid, cancelled when cleared).
+ *   AMC amount → the AMC for the year that starts on the AMC start date: made live with its invoice, or re-priced while unpaid.
+ *   Software type moved up → the convert amount as an UPGRADE invoice.
+ */
+async function afterSave(ctx, id, d, prevPlan, prevAmc = null) {
   const p = await getParty(id);
-  if (d.installAmt > 0) { const have = (await (await rq()).input('id', sql.Int, id).query("SELECT 1 FROM AMC_INVOICE WHERE CUST_ID = @id AND KIND = 'INSTALL' AND STATUS <> 'CANCELLED'")).recordset[0]; if (!have) await raiseInvoice(ctx, { custId: id, kind: 'INSTALL', amount: d.installAmt, invDate: d.install || today(), description: `Software installation — ${p.PLAN_CODE || 'DataCare ERP'}` }); }
+  const inst = (await (await rq()).input('id', sql.Int, id).query("SELECT TOP 1 INV_ID, INV_NO, TOTAL, VAT_AMT, PAID FROM AMC_INVOICE WHERE CUST_ID = @id AND KIND = 'INSTALL' AND STATUS <> 'CANCELLED' ORDER BY INV_ID")).recordset[0];
+  if (inst) await reprice(ctx, inst, d.installAmt);
+  else if (d.installAmt > 0) await raiseInvoice(ctx, { custId: id, kind: 'INSTALL', amount: d.installAmt, invDate: d.install || today(), description: `Software installation — ${p.PLAN_CODE || 'DataCare ERP'}` });
+  if (d.amcAmt != null && (prevAmc == null || Math.abs(Number(prevAmc) - d.amcAmt) >= 0.005)) {   /* only when the AMC amount was actually typed or changed */
+    const start = p.LIC_START || p.INSTALL_DATE;
+    if (!start && d.amcAmt > 0) throw badRequest('Give the installation / AMC start date before the AMC amount.', 'VALIDATION');
+    const k = start ? (await (await rq()).input('id', sql.Int, id).input('s', sql.Date, start).query("SELECT TOP 1 K.CONTRACT_ID, K.CONTRACT_NO, K.AMOUNT, K.STATUS, I.INV_ID, I.INV_NO, I.TOTAL, I.VAT_AMT, I.PAID FROM AMC_CONTRACT K LEFT JOIN AMC_INVOICE I ON I.CONTRACT_ID = K.CONTRACT_ID AND I.STATUS <> 'CANCELLED' WHERE K.CUST_ID = @id AND K.STATUS IN ('LIVE', 'DRAFT', 'EXPIRED') AND K.START_DATE <= @s AND K.END_DATE >= @s ORDER BY K.CONTRACT_ID DESC")).recordset[0] : null;
+    const { createContract, setStatus } = await import('./contractService.js');
+    if (!k && d.amcAmt > 0) await createContract(ctx, { CUST_ID: id, START_DATE: start, END_DATE: yearEnd(start), AMOUNT: d.amcAmt, VAT_PRC: Number(await getSetting('VAT_PRC')) || 0, PLAN_CODE: p.PLAN_CODE, TILLS: p.TILLS || null, STATUS: 'LIVE' });
+    else if (k && Math.abs(Number(k.AMOUNT) - d.amcAmt) >= 0.005) {
+      if (k.INV_ID && Number(k.PAID) > 0) throw new HttpError(409, `Money was already received against ${k.INV_NO} for ${k.CONTRACT_NO} — cancel that receipt before changing the AMC amount.`, 'PAID');
+      if (d.amcAmt <= 0) { await setStatus(ctx, k.CONTRACT_ID, 'CANCELLED'); }
+      else {
+        const vatPrc = Number(await getSetting('VAT_PRC')) || 0; const vat = Math.round(d.amcAmt * vatPrc) / 100;
+        await (await rq()).input('id', sql.Int, k.CONTRACT_ID).input('a', sql.Decimal(18, 2), d.amcAmt).input('vp', sql.Decimal(5, 2), vatPrc).input('va', sql.Decimal(18, 2), vat).input('t', sql.Decimal(18, 2), Math.round((d.amcAmt + vat) * 100) / 100).query('UPDATE AMC_CONTRACT SET AMOUNT = @a, VAT_PRC = @vp, VAT_AMT = @va, TOTAL = @t, EDIT_DATE = SYSUTCDATETIME() WHERE CONTRACT_ID = @id');
+        await audit(ctx, 'AMC_CONTRACT', k.CONTRACT_NO, 'REPRICE', { from: k.AMOUNT, to: d.amcAmt });
+        if (k.INV_ID) await reprice(ctx, { INV_ID: k.INV_ID, INV_NO: k.INV_NO, TOTAL: k.TOTAL, VAT_AMT: k.VAT_AMT, PAID: k.PAID }, d.amcAmt);
+        if (k.STATUS === 'DRAFT') await setStatus(ctx, k.CONTRACT_ID, 'LIVE');
+      }
+    }
+  }
   if (d.plan && prevPlan && d.plan !== prevPlan) {
     const prices = await getSetting('PRICES'); const diff = money((Number(prices[d.plan]) || 0) - (Number(prices[prevPlan]) || 0));
     let invId = null; if (diff > 0) invId = (await raiseInvoice(ctx, { custId: id, kind: 'UPGRADE', amount: diff, invDate: today(), description: `Software upgrade ${prevPlan} → ${d.plan} (convert amount)` })).INV_ID;
@@ -102,7 +137,7 @@ export async function updateParty(ctx, id, b) {
   if (b.ACTIVE !== undefined) await (await rq()).input('id', sql.Int, id).input('a', sql.Bit, !!b.ACTIVE).query('UPDATE AMC_CUSTOMER SET ACTIVE = @a WHERE CUST_ID = @id');
   await bind((await rq()).input('id', sql.Int, id), d).query(`UPDATE AMC_CUSTOMER SET ${SET} WHERE CUST_ID = @id`);
   await audit(ctx, 'AMC_CUSTOMER', id, 'UPDATE', { name: d.name, plan: d.plan, from: cur.PLAN_CODE, installAmt: d.installAmt, active: b.ACTIVE });
-  await afterSave(ctx, id, d, cur.PLAN_CODE); return getParty(id);
+  await afterSave(ctx, id, d, cur.PLAN_CODE, cur.AMC_AMT); return getParty(id);
 }
 /** Delete only a party with nothing on record; otherwise switch it off (ACTIVE = 0) so the history stays. */
 export async function deleteParty(ctx, id) {

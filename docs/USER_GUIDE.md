@@ -11,11 +11,7 @@ Keyboard: `⌘K` / `Ctrl+K` search and jump anywhere · `Alt+C` party master · 
 Days left everywhere are counted in Dubai days, so they drop by one at midnight UAE time.
 
 ## Who sees what
-| Role | Can do | Cannot do |
-|---|---|---|
-| **Owner** (Morvin) | Everything below. | — |
-| **Accounts** | AMC issue, invoices, AMC received, outstanding, collection, money reports. Reads parties, leads, tickets and visits. | Edit parties, leads, tickets or visits; users, settings. |
-| **Support** (the team) | Party master, leads & follow-up, tickets, visits, non-money reports. Reads contracts. | See any amount. Invoices, payments, installation amounts and money reports are hidden. |
+Every login has the same rights: everyone can add, change and delete everything, money included.
 
 ---
 
@@ -58,16 +54,17 @@ Fields, top to bottom:
 | Mobile, phone, e-mail, TRN | Mobile with country code (971…); the TRN goes on the tax invoice. |
 | Installation date | Pick a date — **AMC start takes the same date** and **AMC end is one year later, minus a day** (22/09/2026 → 21/09/2027), by itself. |
 | Birth date, tills | |
-| Installation amount | Owner / accounts only. On save, one **installation invoice** is raised for it (plus VAT). |
+| Installation amount | On save, its **installation invoice** is made; change the amount later and the invoice follows while nothing is received (0 cancels it). |
+| AMC amount | On save, the **AMC for the year from the AMC start date** is issued and made live with its invoice; change it later and both follow while unpaid. The form shows installation + AMC as the total. |
 | Recognition code (HDD), Shop ID | Leave blank: the code is made as DC + serial + W + type letter + installer (DC0002WPMV), the Shop ID from the name. |
 | Ref by, old HDD, old install date, PC serials, status, remark | |
 
 **Convert amount.** Prices per software type are in Settings → Software prices (Basic 4,000, Pro 6,000, Advance 8,000,
-Enterprise 10,000 AED by default). When a party moves up, say Basic → Pro, it pays only the difference: 2,000 + VAT. Saving the
+Enterprise 10,000 AED by default). When a party moves up, say Basic → Pro, it pays only the difference: 2,000. Saving the
 new type raises an **upgrade invoice** for that difference, records the change (shown under Money → Convert amounts), and moves
 the type letter in the code. Moving down raises nothing.
 
-**Money** (owner / accounts): billed, received and outstanding for the party across every invoice.
+**Money**: billed, received and outstanding for the party across every invoice.
 
 **Delete** removes a party with nothing on record; one with contracts, invoices, tickets or visits is switched off instead.
 **Open** goes to the full party page with its tabs (Overview, Contracts, Payments, Tickets, Visits, Notes, History).
@@ -185,7 +182,7 @@ switch a login off. You cannot demote or deactivate yourself.
 | Tab | What it holds |
 |---|---|
 | Company | Name, TRN, address, phone, e-mail, website, bank details and logo — printed on the contract, tax invoice and receipt. |
-| Numbering & VAT | Prefixes for contract / invoice / receipt / ticket numbers (5 digits, never reused) and the VAT %. |
+| Numbering & VAT | Prefixes for contract / invoice / receipt / ticket numbers (5 digits, never reused) and the VAT %. VAT is 0 by default: the amounts typed are the full amounts. Set a % only if VAT is to be added on top. |
 | Software prices | Price of Basic, Pro, Advance and Enterprise — the convert amount is the difference between two of them. |
 | Security | Lock after N wrong passwords for M minutes, minimum password length, idle sign-out minutes. |
 | SLA & reminders | Response hours per priority; the daily reminder time (Dubai); the team's WhatsApp number and e-mail. |
