@@ -32,9 +32,9 @@ export async function ensureInvoice(ctx, contractId, { invDate = null, dueDays =
   const inv = await getInvoice(id); await audit(ctx, 'AMC_INVOICE', inv.INV_NO, 'CREATE', { contract: k.CONTRACT_NO, total: inv.TOTAL }); return inv;
 }
 /** A bill that is not a contract's: the installation amount, or the difference when the software type moves up. */
-export async function raiseInvoice(ctx, { custId, kind, amount, invDate = null, dueDays = 30, description }) {
+export async function raiseInvoice(ctx, { custId, kind, amount, invDate = null, dueDays = 30, description, vat: withVat = false }) {
   const c = (await (await rq()).input('id', sql.Int, custId).query('SELECT SHOP_NAME FROM AMC_CUSTOMER WHERE CUST_ID = @id')).recordset[0]; if (!c) throw notFound('Party not found');
-  const vatPrc = Number(await getSetting('VAT_PRC')); const amt = Math.round((Number(amount) || 0) * 100) / 100; const vat = Math.round(amt * vatPrc) / 100; const d = invDate || today();
+  const vatPrc = withVat ? Number(await getSetting('VAT_RATE')) || 0 : 0;   /* VAT only when ticked on the party */ const amt = Math.round((Number(amount) || 0) * 100) / 100; const vat = Math.round(amt * vatPrc) / 100; const d = invDate || today();
   const id = await withNo('INVOICE', async (no) => (await (await rq()).input('no', sql.VarChar(20), no).input('k', sql.VarChar(10), kind).input('c', sql.Int, custId).input('d', sql.Date, d).input('due', sql.Date, addDays(d, dueDays)).input('ds', sql.NVarChar(500), String(description || kind).slice(0, 500))
     .input('a', sql.Decimal(18, 2), amt).input('vp', sql.Decimal(5, 2), vatPrc).input('va', sql.Decimal(18, 2), vat).input('t', sql.Decimal(18, 2), Math.round((amt + vat) * 100) / 100).input('u', sql.Int, ctx.userId)
     .query('INSERT INTO AMC_INVOICE (INV_NO, KIND, CONTRACT_ID, CUST_ID, INV_DATE, DUE_DATE, DESCRIPTION, AMOUNT, VAT_PRC, VAT_AMT, TOTAL, USER_ID) OUTPUT inserted.INV_ID VALUES (@no, @k, NULL, @c, @d, @due, @ds, @a, @vp, @va, @t, @u)')).recordset[0].INV_ID);

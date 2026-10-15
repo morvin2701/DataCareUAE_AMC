@@ -21,7 +21,7 @@ export function ContractEditor({ open, onClose, custId, contract, onSaved }) {
     if (!custId) customerService.list({ active: '1' }).then((r) => setCusts(r.rows)).catch(() => {});
     if (custId) load(custId);
   }, [open, custId, contract]); // eslint-disable-line
-  const load = async (id) => { try { const r = await contractService.defaults(id); setD(r); setF({ CUST_ID: id, START_DATE: r.START_DATE, END_DATE: r.END_DATE, AMOUNT: r.AMOUNT, VAT_PRC: r.VAT_PRC, COVERS_SUPPORT: r.COVERS_SUPPORT, COVERS_UPDATES: r.COVERS_UPDATES, VISITS_INCLUDED: r.VISITS_INCLUDED, TILLS: r.TILLS ?? '', PLAN_CODE: r.PLAN_CODE || '', RENEWED_FROM: r.RENEWED_FROM, REMARK: '' }); } catch (e) { toast(e.message, 'error'); } };
+  const load = async (id) => { try { const r = await contractService.defaults(id); setD(r); setF({ CUST_ID: id, START_DATE: r.START_DATE, END_DATE: r.END_DATE, AMOUNT: r.AMOUNT, VAT_PRC: r.VAT_PRC || 0, COVERS_SUPPORT: r.COVERS_SUPPORT, COVERS_UPDATES: r.COVERS_UPDATES, VISITS_INCLUDED: r.VISITS_INCLUDED, TILLS: r.TILLS ?? '', PLAN_CODE: r.PLAN_CODE || '', RENEWED_FROM: r.RENEWED_FROM, REMARK: '' }); } catch (e) { toast(e.message, 'error'); } };
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const setStart = (v) => setF((s) => ({ ...s, START_DATE: v, END_DATE: v ? yearEnd(v) : s.END_DATE }));
   const vatAmt = f ? money(f.AMOUNT * f.VAT_PRC / 100) : 0; const total = f ? money(Number(f.AMOUNT) + vatAmt) : 0;
@@ -43,7 +43,7 @@ export function ContractEditor({ open, onClose, custId, contract, onSaved }) {
       <Input label="Start" type="date" value={f.START_DATE} onChange={(e) => setStart(e.target.value)} disabled={!draft} autoFocus={!!custId} />
       <Input label="End (one year)" type="date" value={f.END_DATE} onChange={(e) => set('END_DATE', e.target.value)} disabled={!draft} />
       <Input label="Amount (AED, before VAT)" type="number" step="0.01" min="0" value={f.AMOUNT} onChange={(e) => set('AMOUNT', e.target.value)} className="[&_input]:num [&_input]:text-right" />
-      <Input label="VAT %" type="number" step="0.01" min="0" max="100" value={f.VAT_PRC} onChange={(e) => set('VAT_PRC', e.target.value)} className="[&_input]:num [&_input]:text-right" />
+      <div><label className="label">VAT</label><div className="rounded-md border border-line bg-surface-2/50 px-4"><Toggle label={`+ VAT ${d?.VAT_RATE ?? 5}%`} hint="Off = no VAT on this AMC" checked={Number(f.VAT_PRC) > 0} onChange={(v) => set('VAT_PRC', v ? (d?.VAT_RATE ?? 5) : 0)} /></div></div>
       <div className="vbar sm:col-span-2 justify-between"><span className="text-muted">VAT AED {fmt(vatAmt)}</span><span className="num text-[15px] font-semibold">Total AED {fmt(total)}</span></div>
       <Input label="Visits included" type="number" min="0" value={f.VISITS_INCLUDED} onChange={(e) => set('VISITS_INCLUDED', e.target.value)} />
       <Input label="Tills covered" type="number" min="0" value={f.TILLS} onChange={(e) => set('TILLS', e.target.value)} />

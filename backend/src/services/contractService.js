@@ -36,8 +36,8 @@ export async function contractDefaults(custId) {
   const c = (await (await rq()).input('id', sql.Int, custId).query('SELECT CUST_ID, SHOP_CODE, SHOP_NAME, LIC_START, LIC_END, INSTALL_DATE, TILLS, PLAN_CODE FROM AMC_CUSTOMER WHERE CUST_ID = @id')).recordset[0];
   if (!c) throw notFound('Customer not found');
   const prev = (await (await rq()).input('id', sql.Int, custId).query("SELECT TOP 1 CONTRACT_ID, CONTRACT_NO, END_DATE, AMOUNT, VAT_PRC, COVERS_SUPPORT, COVERS_UPDATES, VISITS_INCLUDED, STATUS FROM AMC_CONTRACT WHERE CUST_ID = @id AND STATUS IN ('LIVE', 'EXPIRED') ORDER BY END_DATE DESC")).recordset[0];
-  const start = prev ? renewalStart(prev.END_DATE) : iso(c.LIC_START || c.INSTALL_DATE) || today(); const vat = Number(await getSetting('VAT_PRC'));
-  return { customer: c, previous: prev ? { ...prev, END_DATE: iso(prev.END_DATE) } : null, START_DATE: start, END_DATE: yearEnd(start), AMOUNT: prev ? Number(prev.AMOUNT) : 0, VAT_PRC: vat, COVERS_SUPPORT: prev ? !!prev.COVERS_SUPPORT : true, COVERS_UPDATES: prev ? !!prev.COVERS_UPDATES : true, VISITS_INCLUDED: prev ? prev.VISITS_INCLUDED : 0, TILLS: c.TILLS || null, PLAN_CODE: c.PLAN_CODE || null, RENEWED_FROM: prev?.CONTRACT_ID || null, licenceDays: LICENCE_DAYS };
+  const start = prev ? renewalStart(prev.END_DATE) : iso(c.LIC_START || c.INSTALL_DATE) || today(); const vatRate = Number(await getSetting('VAT_RATE')) || 0;
+  return { customer: c, previous: prev ? { ...prev, END_DATE: iso(prev.END_DATE) } : null, START_DATE: start, END_DATE: yearEnd(start), AMOUNT: prev ? Number(prev.AMOUNT) : 0, VAT_PRC: prev ? Number(prev.VAT_PRC) || 0 : 0, VAT_RATE: vatRate, COVERS_SUPPORT: prev ? !!prev.COVERS_SUPPORT : true, COVERS_UPDATES: prev ? !!prev.COVERS_UPDATES : true, VISITS_INCLUDED: prev ? prev.VISITS_INCLUDED : 0, TILLS: c.TILLS || null, PLAN_CODE: c.PLAN_CODE || null, RENEWED_FROM: prev?.CONTRACT_ID || null, licenceDays: LICENCE_DAYS };
 }
 const money = (v) => Math.round((Number(v) || 0) * 100) / 100;
 function readBody(b, { forNew }) {
@@ -52,7 +52,7 @@ function readBody(b, { forNew }) {
 export async function createContract(ctx, b) {
   const custId = Number(b.CUST_ID); const c = (await (await rq()).input('id', sql.Int, custId).query('SELECT CUST_ID, SERVER_ID, SHOP_CODE FROM AMC_CUSTOMER WHERE CUST_ID = @id')).recordset[0];
   if (!c) throw notFound('Customer not found');
-  const d = readBody(b, { forNew: true }); const vatPrc = d.vatPrc ?? Number(await getSetting('VAT_PRC')); const vatAmt = money(d.amount * vatPrc / 100);
+  const d = readBody(b, { forNew: true }); const vatPrc = d.vatPrc ?? 0;   /* VAT only when it was ticked */ const vatAmt = money(d.amount * vatPrc / 100);
   const live = (await (await rq()).input('id', sql.Int, custId).input('s', sql.Date, d.start).input('e', sql.Date, d.end).query("SELECT CONTRACT_NO FROM AMC_CONTRACT WHERE CUST_ID = @id AND STATUS = 'LIVE' AND START_DATE <= @e AND END_DATE >= @s")).recordset[0];
   if (live && d.status === 'LIVE') throw new HttpError(409, `${live.CONTRACT_NO} is already live for these dates — start the renewal the day after it ends.`, 'OVERLAP');
   const id = await withNo('CONTRACT', async (no) => (await (await rq()).input('c', sql.Int, custId).input('no', sql.VarChar(20), no).input('s', sql.Date, d.start).input('e', sql.Date, d.end).input('a', sql.Decimal(18, 2), d.amount).input('vp', sql.Decimal(5, 2), vatPrc).input('va', sql.Decimal(18, 2), vatAmt).input('t', sql.Decimal(18, 2), money(d.amount + vatAmt))

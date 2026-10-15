@@ -9,7 +9,7 @@ export { CUST_COLS, CUST_FROM } from '../services/partyService.js';
 /** Party master. OWNER / SUPPORT add and change parties; ACCOUNTS reads. Amounts are stripped for SUPPORT. */
 const r = Router(); const write = requireRole('SUPPORT');
 r.get('/customers', requireAuth, wrap(async (req, res) => res.json({ success: true, rows: noMoney(req.ctx, await listParties(req.query)) })));
-r.get('/customers/meta', requireAuth, wrap(async (req, res) => res.json({ success: true, plans: PLANS, types: CUST_TYPES, prices: req.ctx.role === 'SUPPORT' ? null : await getSetting('PRICES'), nextHdd: await nextHdd(req.query.plan, req.query.installer) })));
+r.get('/customers/meta', requireAuth, wrap(async (req, res) => res.json({ success: true, plans: PLANS, types: CUST_TYPES, prices: req.ctx.role === 'SUPPORT' ? null : await getSetting('PRICES'), vatRate: Number(await getSetting('VAT_RATE')) || 0, nextHdd: await nextHdd(req.query.plan, req.query.installer) })));
 r.get('/customers/:id', requireAuth, wrap(async (req, res) => { const c = await getParty(Number(req.params.id)); if (!c) throw notFound('Party not found'); res.json({ success: true, customer: noMoney(req.ctx, c), changes: req.ctx.role === 'SUPPORT' ? [] : await planChanges(c.CUST_ID) }); }));
 r.post('/customers', requireAuth, write, wrap(async (req, res) => res.status(201).json({ success: true, customer: noMoney(req.ctx, await createParty(req.ctx, req.body || {})) })));
 r.put('/customers/:id', requireAuth, write, wrap(async (req, res) => res.json({ success: true, customer: noMoney(req.ctx, await updateParty(req.ctx, Number(req.params.id), req.body || {})) })));

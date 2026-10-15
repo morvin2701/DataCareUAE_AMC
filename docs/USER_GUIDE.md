@@ -56,6 +56,7 @@ Fields, top to bottom:
 | Birth date, tills | |
 | Installation amount | On save, its **installation invoice** is made; change the amount later and the invoice follows while nothing is received (0 cancels it). |
 | AMC amount | On save, the **AMC for the year from the AMC start date** is issued and made live with its invoice; change it later and both follow while unpaid. The form shows installation + AMC as the total. |
+| + VAT 5% | Tick only when this party is to be charged VAT; its installation, AMC and upgrade invoices then get the rate from Settings. Untick and they go back to no VAT (while unpaid). Off by default. |
 | Recognition code (HDD), Shop ID | Leave blank: the code is made as DC + serial + W + type letter + installer (DC0002WPMV), the Shop ID from the name. |
 | Ref by, old HDD, old install date, PC serials, status, remark | |
 
@@ -92,7 +93,8 @@ All AMC contracts across every party with status **Draft / Live / Expired / Canc
 
 **How a contract works**
 1. The first AMC starts on the party's licence / installation start; a renewal starts the day after the previous AMC ends.
-   End is one year later minus a day (22/09/2026 → 21/09/2027, 22/09/2027 → 21/09/2028). Amount and cover default from the last contract; VAT from Settings.
+   End is one year later minus a day (22/09/2026 → 21/09/2027, 22/09/2027 → 21/09/2028). Amount and cover default from the last contract.
+   No VAT unless you switch **+ VAT 5%** on in the editor.
 2. **Save as draft** keeps it without touching anything.
 3. **Make live** marks it live and raises its one **tax invoice** (INV-…). Nothing is sent to the ERP.
 4. **Edit** on a live contract changes cover, remark, visits, tills, software type; dates are fixed, and the amount only while
@@ -182,7 +184,7 @@ switch a login off. You cannot demote or deactivate yourself.
 | Tab | What it holds |
 |---|---|
 | Company | Name, TRN, address, phone, e-mail, website, bank details and logo — printed on the contract, tax invoice and receipt. |
-| Numbering & VAT | Prefixes for contract / invoice / receipt / ticket numbers (5 digits, never reused) and the VAT %. VAT is 0 by default: the amounts typed are the full amounts. Set a % only if VAT is to be added on top. |
+| Numbering & VAT | Prefixes for contract / invoice / receipt / ticket numbers (5 digits, never reused) and the VAT %. VAT is the **rate only** (5 %): it is added nowhere unless **+ VAT** is ticked on a party or on an AMC. |
 | Software prices | Price of Basic, Pro, Advance and Enterprise — the convert amount is the difference between two of them. |
 | Security | Lock after N wrong passwords for M minutes, minimum password length, idle sign-out minutes. |
 | SLA & reminders | Response hours per priority; the daily reminder time (Dubai); the team's WhatsApp number and e-mail. |
